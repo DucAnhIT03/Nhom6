@@ -1,0 +1,36 @@
+.media-mentions {
+  padding: 60px 20px;
+  background-color: #fff;
+}
+
+.media-logos {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-around;
+  align-items: center;
+  gap: 30px;
+}
+
+.media-logo {
+  display: flex;
+  padding: 0 15px;
+}
+
+.media-logo img {
+  max-width: 149px;
+  height: 60px;
+}
+
+@media (max-width: 768px) {
+  .media-logos {
+    gap: 15px;
+  }
+  
+  .media-logo {
+    padding: 15px 20px;
+    font-size: 14px;
+  }
+}
+
+

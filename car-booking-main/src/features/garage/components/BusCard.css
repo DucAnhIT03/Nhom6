@@ -1,0 +1,37 @@
+.bus-card {
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+  transition: transform 0.2s;
+  padding-bottom: 20px;
+  box-shadow: 2px 2px 20px rgba(0, 0, 0, 0.12);
+}
+
+.bus-card:hover {
+  transform: translateY(-4px);
+}
+
+.bus-card-img {
+  width: 100%;
+  height: auto; 
+  display: block;
+  object-fit: contain; 
+}
+
+.bus-card-body {
+  padding: 0 16px;
+}
+
+.bus-card-body h3 {
+  font-size: 1.1rem;
+}
+
+.bus-card-body p {
+  font-size: 0.9rem;
+  color: #555;
+  display: -webkit-box; 
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2; 
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

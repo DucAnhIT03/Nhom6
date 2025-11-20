@@ -1,0 +1,103 @@
+.bus-card {
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+  transition: transform 0.2s;
+  padding-bottom: 20px;
+  box-shadow: 2px 2px 20px rgba(0, 0, 0, 0.12);
+}
+
+.bus-card:hover {
+  transform: translateY(-4px);
+}
+
+.bus-card-img {
+  width: 100%;
+  height: 180px; 
+  display: block;
+  object-fit: cover; 
+  background: #f8fafc;
+}
+
+.bus-card-body {
+  padding: 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 150px;
+  justify-content: center;
+}
+
+.bus-card-body h3 {
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 4px;
+}
+
+.bus-card-body p {
+  font-size: 0.9rem;
+  color: #4b5563;
+  margin: 0;
+}
+
+.bus-card-meta {
+  margin-top: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.bus-card-meta .price {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #d7263d;
+}
+
+.bus-card-meta small {
+  color: #6b7280;
+  font-size: 0.85rem;
+}
+
+  color: #555;
+  display: -webkit-box; 
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2; 
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bus-card-body p {
+  font-size: 0.9rem;
+  color: #4b5563;
+  margin: 0;
+}
+
+.bus-card-meta {
+  margin-top: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.bus-card-meta .price {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #d7263d;
+}
+
+.bus-card-meta small {
+  color: #6b7280;
+  font-size: 0.85rem;
+}
+
+  color: #555;
+  display: -webkit-box; 
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2; 
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

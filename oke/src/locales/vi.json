@@ -1,0 +1,13 @@
+{
+  "common": {
+    "success": "Thành công",
+    "error": "Có lỗi xảy ra",
+    "notFound": "Không tìm thấy",
+    "unauthorized": "Không có quyền truy cập"
+  },
+  "validation": {
+    "required": "Trường này là bắt buộc",
+    "invalid": "Giá trị không hợp lệ"
+  }
+}
+

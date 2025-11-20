@@ -1,0 +1,15 @@
+.intro-customer-first {
+  background: #fff;
+  padding: 24px 0;
+}
+
+.lead.center {
+  margin: 10px 0;
+}
+
+.customer h2 {
+  text-align: center;
+  font-weight: 700;
+  font-size: 36px;
+  color: rgba(255, 141, 0, 1);
+}

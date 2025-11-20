@@ -1,0 +1,63 @@
+.bus-card {
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+  transition: transform 0.2s;
+  padding-bottom: 20px;
+  box-shadow: 2px 2px 20px rgba(0, 0, 0, 0.12);
+}
+
+.bus-card:hover {
+  transform: translateY(-4px);
+}
+
+.bus-card-img {
+  width: 100%;
+  height: 200px;
+  display: block;
+  object-fit: cover; 
+}
+
+.bus-card-img-placeholder {
+  width: 100%;
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f0f0f0;
+  color: #999;
+  font-size: 0.9rem;
+}
+
+.bus-card-body {
+  padding: 0 16px;
+}
+
+.bus-card-body h3 {
+  font-size: 1.1rem;
+}
+
+.bus-card-location {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #666;
+  font-size: 0.85rem;
+  margin: 8px 0;
+}
+
+.bus-card-location svg {
+  color: #4a90e2;
+}
+
+.bus-card-body p {
+  font-size: 0.9rem;
+  color: #555;
+  display: -webkit-box; 
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 8px;
+}

@@ -1,0 +1,28 @@
+.intro-container {
+  padding: 30px 200px;
+}
+
+@media (max-width: 992px) {
+  .feature-cards {
+    grid-template-columns: 1fr;
+  }
+  .stats-row {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+  .why-grid {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+  .why-left img {
+    margin: 0 auto;
+  }
+  .contact-form {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 576px) {
+  .stats-row {
+    grid-template-columns: 1fr;
+  }
+}

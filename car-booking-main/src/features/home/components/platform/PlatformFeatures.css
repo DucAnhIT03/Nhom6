@@ -1,0 +1,45 @@
+.platform-features {
+  background-color: #fff;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* 2 card 1 dòng */
+  gap: 30px;
+}
+
+.feature-card {
+  display: flex;
+  align-items: center;
+  height: 64px;
+  gap: 24px;
+}
+
+.feature-icon img {
+  width: 64px;
+  height: 64px;
+}
+
+.feature-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  line-height: 1.5;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .features-grid {
+    grid-template-columns: 1fr; /* 1 card 1 dòng trên mobile */
+    gap: 20px;
+  }
+
+  .feature-icon {
+    font-size: 40px;
+  }
+
+  .feature-title {
+    font-size: 14px;
+  }
+}
+

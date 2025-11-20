@@ -1,0 +1,47 @@
+.intro-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  height: 650px;
+  padding: 0 20px;
+  background: rgba(214, 250, 255, 1);
+  overflow: hidden;
+}
+
+.intro-hero-content {
+  max-width: 318px;
+}
+
+.intro-hero-content span {
+  color: rgba(255, 141, 0, 1);
+}
+
+.intro-hero-content > p {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  margin: 0;
+  font-size: 80px;
+  color: rgba(0, 148, 222, 1);
+  font-weight: 700;
+}
+
+.intro-hero-bg {
+  max-width: 50%;
+}
+
+.intro-hero-bg img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.content p {
+  margin-bottom: 12px;
+  font-weight: 700;
+  font-size: 20px;
+  color: rgba(0, 0, 0, 1);
+}
+
+.image-content {
+  display: flex;
+  gap: 20px;
+}

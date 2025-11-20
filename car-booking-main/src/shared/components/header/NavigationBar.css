@@ -1,0 +1,390 @@
+.navigation-bar {
+  background-color: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  height: 60px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.nav-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px 0 20px;
+  position: relative;
+}
+
+.logo-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
+.logo-icon img {
+  width: 100px;
+  height: 60px;
+}
+
+.nav-menu {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: 15px;
+  flex-wrap: nowrap;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.nav-right-section {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex-shrink: 0;
+  margin-left: auto;
+  margin-right: 0;
+  justify-content: flex-end;
+  padding-right: 0;
+}
+
+.nav-item {
+  text-decoration: none;
+  color: rgba(17, 144, 212, 1);
+  font-weight: 700;
+  font-size: 13px;
+  padding: 8px 10px;
+  border-radius: 4px;
+  transition: all 0.3s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.nav-item.active {
+  background-color: #1190d4;
+  color: #fff;
+}
+
+.search-icon-btn {
+  background-color: #FFA901;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  width: 30px;
+  height: 30px;
+  border-radius: 5px;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.search-icon-btn:hover {
+  background-color: #c38303;
+}
+
+.auth-buttons {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-name {
+  color: #1190d4;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* User Dropdown Styles */
+.user-dropdown-container {
+  position: relative;
+}
+
+.user-greeting-btn {
+  background: none;
+  border: none;
+  color: #0ea86d;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px 0;
+  border-radius: 5px;
+  transition: all 0.3s;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+}
+
+.user-greeting-btn:hover {
+  color: #1190d4;
+  background-color: rgba(17, 144, 212, 0.1);
+}
+
+.user-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 5px);
+  right: 0;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 220px;
+  z-index: 1000;
+  overflow: hidden;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 12px 16px;
+  text-align: left;
+  background: none;
+  border: none;
+  color: #333;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.dropdown-item:hover {
+  background-color: #f5f5f5;
+}
+
+.dropdown-item.logout-item {
+  color: #dc3545;
+  font-weight: 500;
+}
+
+.dropdown-item.logout-item:hover {
+  background-color: #ffe6e6;
+}
+
+.auth-btn {
+  text-decoration: none;
+  padding: 8px 16px;
+  border-radius: 5px;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.3s;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.login-btn {
+  color: #1190d4;
+  background: transparent;
+  border: 2px solid #1190d4;
+}
+
+.login-btn:hover {
+  background: #1190d4;
+  color: white;
+}
+
+.register-btn {
+  color: white;
+  background: #1190d4;
+}
+
+.register-btn:hover {
+  background: #0d7bb8;
+}
+
+.logout-btn {
+  color: white;
+  background: #dc3545;
+  border: 2px solid #dc3545;
+}
+
+.logout-btn:hover {
+  background: #c82333;
+  border-color: #bd2130;
+}
+
+.hamburger-menu {
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+}
+
+.hamburger-menu span {
+  width: 25px;
+  height: 3px;
+  background-color: #333;
+  border-radius: 3px;
+  transition: all 0.3s;
+}
+
+.side-menu {
+  position: fixed;
+  top: 0;
+  left: -300px;
+  width: 300px;
+  height: 100vh;
+  background-color: #1565c0;
+  z-index: 1001;
+  transition: left 0.3s ease;
+  overflow-y: auto;
+}
+
+.side-menu.open {
+  left: 0;
+}
+
+.side-menu-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+}
+
+.side-menu-header .logo-vivu,
+.side-menu-header .logo-today {
+  color: white;
+}
+
+.close-menu {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.side-menu-nav {
+  display: flex;
+  flex-direction: column;
+  padding: 20px 0;
+}
+
+.side-nav-item {
+  color: white;
+  text-decoration: none;
+  padding: 15px 20px;
+  font-size: 16px;
+  transition: background-color 0.3s;
+}
+
+.side-nav-item:hover,
+.side-nav-item.active {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.side-user-info {
+  color: white;
+  padding: 15px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 10px;
+}
+
+.side-auth-btn {
+  color: white;
+  text-decoration: none;
+  padding: 15px 20px;
+  font-size: 16px;
+  transition: background-color 0.3s;
+  display: block;
+  text-align: left;
+  border: none;
+  background: none;
+  width: 100%;
+  cursor: pointer;
+}
+
+.side-auth-btn.login-btn {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.side-auth-btn.register-btn {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.side-auth-btn.logout-btn {
+  background-color: rgba(220, 53, 69, 0.2);
+  color: #ffcccc;
+}
+
+.side-auth-btn:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.side-auth-btn.logout-btn:hover {
+  background-color: rgba(220, 53, 69, 0.4);
+}
+
+.menu-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+}
+
+@media (max-width: 1200px) {
+  .nav-item {
+    font-size: 12px;
+    padding: 8px 8px;
+  }
+  
+  .nav-menu {
+    gap: 10px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .user-greeting-btn {
+    font-size: 13px;
+    padding: 8px 10px;
+  }
+  
+  .nav-item {
+    font-size: 11px;
+    padding: 8px 6px;
+  }
+  
+  .nav-menu {
+    gap: 8px;
+  }
+}
+
+@media (max-width: 900px) {
+  .nav-menu {
+    display: none;
+  }
+  
+  .nav-right-section {
+    display: none;
+  }
+
+  .hamburger-menu {
+    display: flex;
+  }
+}
+

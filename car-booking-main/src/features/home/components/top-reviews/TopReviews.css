@@ -1,0 +1,67 @@
+.top-reviews {
+  padding: 60px 20px;
+  background-color: white;
+}
+
+.reviews-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-areas:
+    "sg sg vt"
+    "dl hn hn"
+    "qn hn hn"
+    "nt nt dn"
+    "nt nt pt";
+}
+
+.review-card.city-1 { grid-area: sg; height: 260px; }   
+.review-card.city-2 { grid-area: vt; height: 260px; }   
+.review-card.city-3 { grid-area: dl; height: 200px; }   
+.review-card.city-4 { grid-area: qn; height: 200px; }   
+.review-card.city-5 { grid-area: hn; height: 412px; }   
+.review-card.city-6 { grid-area: dn; height: 260px; }   
+.review-card.city-7 { grid-area: nt; height: 472px; }   
+.review-card.city-8 { grid-area: pt; height: 200px; }   
+
+.review-card {
+  position: relative;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+  cursor: pointer;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.review-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+  padding: 20px;
+  color: white;
+}
+
+.city-name {
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 5px;
+  color: #fff
+}
+
+.article-count {
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+@media (max-width: 768px) {
+  .reviews-grid {
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-areas: none;
+  }
+
+  .review-card {
+    height: 180px !important;
+  }
+}
+

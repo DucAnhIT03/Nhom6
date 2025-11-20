@@ -1,0 +1,120 @@
+.popular-routes {
+  background-color: #fff;
+  position: relative;
+  padding-top: 20px;
+}
+
+.section-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.section-title {
+  font-size: 28px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 30px;
+  border-left: 4px solid #ffa901;
+  padding: 4px 0 4px 12px;
+}
+
+.routes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.route-card {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  padding: 16px;
+  overflow: hidden;
+  box-shadow: 0 5px 5px rgba(76, 76, 76, 0.1);
+  transition: transform 0.3s, box-shadow 0.3s;
+  cursor: pointer;
+}
+
+.route-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.route-image {
+  width: 100%;
+  height: 150px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 60px;
+}
+
+.route-image img {
+  width: 228px;
+  height: 159px;
+}
+
+.route-info {
+  padding: 16px 0;
+}
+
+.route-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: rgba(0, 97, 61, 1);
+  margin-bottom: 10px;
+}
+
+.route-price {
+  font-size: 14px;
+  font-weight: 400;
+  color: rgba(61, 84, 165, 1);
+}
+
+.arrow-btn {
+  position: absolute;
+  top: 50%;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  z-index: 10;
+  padding: 0;
+}
+
+.arrow-btn.left {
+  left: 100px;  
+}
+
+.arrow-btn.right {
+  right: 100px;
+}
+
+.arrow-btn svg {
+  width: 27px;
+  height: 27px;
+  color: #fff;
+  background-color: rgba(255, 169, 1, 1);
+  border-radius: 50%;
+  padding: 6px;  
+  transition: 0.25s ease;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.25);
+}
+
+.arrow-btn svg:hover {
+  background-color: #ffb400; 
+  transform: scale(1.1); 
+}
+
+@media (max-width: 768px) {
+  .routes-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+  }
+
+  .route-image {
+    height: 120px;
+    font-size: 40px;
+  }
+}
+

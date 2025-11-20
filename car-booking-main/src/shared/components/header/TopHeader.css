@@ -1,0 +1,56 @@
+.top-header {
+  background-color: #1565c0;
+  color: white;
+  padding: 10px 0;
+  font-size: 14px;
+}
+
+.top-header-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px;
+}
+
+.top-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+
+.bus-icon {
+  font-size: 18px;
+}
+
+.top-header-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@media (max-width: 768px) {
+  .top-header {
+    font-size: 12px;
+    padding: 8px 0;
+  }
+  
+  .top-header-container {
+    flex-direction: column;
+    gap: 5px;
+  }
+  
+  .top-header-right {
+    gap: 15px;
+  }
+}
+
+
