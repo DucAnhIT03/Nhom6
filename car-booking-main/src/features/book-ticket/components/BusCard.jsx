@@ -1,40 +1,102 @@
-import React from "react";
-import { FaStar } from "react-icons/fa6";
 import { IoBus } from "react-icons/io5";
 
-export default function BusCard({ bus }) {
+const currency = new Intl.NumberFormat("vi-VN", {
+  style: "currency",
+  currency: "VND",
+});
+
+const formatTime = (value) => {
+  if (!value) return "--:--";
+  return new Date(value).toLocaleTimeString("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+const formatDuration = (minutes) => {
+  if (!minutes || Number.isNaN(minutes)) return "";
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (hours && mins) return `${hours}h ${mins}’`;
+  if (hours) return `${hours}h`;
+  return `${mins}’`;
+};
+
+export default function BusCard({ schedule, onBookClick }) {
+  if (!schedule) return null;
+
+  const bus = schedule.bus || {};
+  const route = schedule.route || {};
+  const departureStation = route?.departureStation?.name || "Đang cập nhật";
+  const arrivalStation = route?.arrivalStation?.name || "Đang cập nhật";
+  const companyName =
+    bus?.company?.name ||
+    bus?.company?.companyName ||
+    route?.busCompany?.companyName ||
+    "Nhà xe đang cập nhật";
+  const busName = bus?.name || companyName;
+  const licensePlate = bus?.licensePlate ? `· ${bus.licensePlate}` : "";
+  const departureTimeLabel = formatTime(schedule.departureTime);
+  const arrivalTimeLabel = formatTime(schedule.arrivalTime);
+  const durationMinutes =
+    route?.duration ||
+    (schedule.departureTime && schedule.arrivalTime
+      ? Math.max(
+          Math.round(
+            (new Date(schedule.arrivalTime) -
+              new Date(schedule.departureTime)) /
+              60000
+          ),
+          0
+        )
+      : null);
+  const durationLabel = formatDuration(durationMinutes);
+  const priceLabel =
+    typeof route?.price === "number"
+      ? currency.format(route.price)
+      : "Liên hệ";
+  const availableSeats =
+    typeof schedule.availableSeat === "number" ? schedule.availableSeat : 0;
+  const totalSeats =
+    typeof schedule.totalSeats === "number" ? schedule.totalSeats : 0;
+  const cover = bus?.company?.image || "/bus-demo.jpg";
+
   return (
     <div className="bus-image">
-      <img src={bus.image} className="bus-img" />
+      <img src={cover} className="bus-img" alt={companyName} />
 
       <div className="bus-info">
         <div className="bus-header">
-          <h3>{bus.name}</h3>
+          <h3>{busName}</h3>
           <span className="rating">
-            <FaStar /> {bus.rating}
+            <IoBus size={14} /> {availableSeats} ghế trống
           </span>
-          <span className="rating-text">{bus.reviews} Đánh giá</span>
         </div>
 
-        <p className="bus-type">{bus.type}</p>
+        <p className="bus-type">
+          {companyName} {licensePlate}
+        </p>
 
         <div className="bus-time">
-          <span className="start">{bus.start}</span>
+          <span className="start">{departureTimeLabel}</span>
           <div className="time-arrow">
-            <span>1h30’</span>
+            <span>{durationLabel}</span>
             <img src="/right-arrow.png" alt="" />
           </div>
-          <span className="end">{bus.end}</span>
+          <span className="end">{arrivalTimeLabel}</span>
         </div>
 
         <div className="location">
-          <a>{bus.from}</a>
-          <a>{bus.to}</a>
+          <a>{departureStation}</a>
+          <a>{arrivalStation}</a>
         </div>
 
         <div className="trip-info">
           <p className="trip-note">
-            *Thuộc chuyến {bus.start} Hà Nội - Hải Phòng
+            Khởi hành ngày{" "}
+            {schedule.departureTime
+              ? new Date(schedule.departureTime).toLocaleDateString("vi-VN")
+              : "Đang cập nhật"}
           </p>
           <p className="more-info">Thông tin chi tiết</p>
         </div>
@@ -42,12 +104,19 @@ export default function BusCard({ bus }) {
 
       <div className="bus-right">
         <p className="price">
-          Từ <span>{bus.price}</span> đ
+          Từ <span>{priceLabel}</span>
         </p>
-        <p className="empty">{bus.empty} Còn trống</p>
-        <button className="choose-btn">
+        <p className="empty">
+          Tổng {totalSeats} ghế ·{" "}
+          {availableSeats > 0 ? `${availableSeats} còn trống` : "Hết chỗ"}
+        </p>
+        <button
+          className="choose-btn"
+          type="button"
+          onClick={() => onBookClick?.(schedule)}
+        >
           <IoBus />
-          Chọn xe
+          Đặt vé
         </button>
       </div>
     </div>

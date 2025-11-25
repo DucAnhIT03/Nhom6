@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import Table from '../../components/Table'
 import Modal from '../../components/Modal'
 import FormInput from '../../components/FormInput'
@@ -25,6 +25,7 @@ export default function Schedules(){
   })
   const [departureTimesByDate, setDepartureTimesByDate] = useState({}) // { '2025-11-20': ['08:00', '14:00'], ... }
   const [newTimeInputs, setNewTimeInputs] = useState({}) // { '2025-11-20': '08:00', ... }
+  const [expandedGroupId, setExpandedGroupId] = useState(null)
 
   const fetch = async () => {
     try {
@@ -58,6 +59,68 @@ export default function Schedules(){
 
   useEffect(() => { fetch() }, [])
 
+  useEffect(() => {
+    setExpandedGroupId(null)
+  }, [schedules])
+
+  const groupedSchedules = useMemo(() => {
+    if (!schedules || schedules.length === 0) return []
+
+    const groups = new Map()
+
+    schedules.forEach((schedule) => {
+      const groupKey = `${schedule.route_id}-${schedule.bus_id}-${schedule.start_date}-${schedule.end_date}`
+      if (!groups.has(groupKey)) {
+        groups.set(groupKey, {
+          id: groupKey,
+          route_id: schedule.route_id,
+          bus_id: schedule.bus_id,
+          route: schedule.route,
+          bus: schedule.bus,
+          bus_company: schedule.bus?.company || schedule.route?.bus_company || '',
+          start_date: schedule.start_date,
+          end_date: schedule.end_date,
+          total_seats: schedule.total_seats,
+          available_seat: schedule.available_seat,
+          schedules: [],
+          departuresByDate: {}
+        })
+      }
+
+      const group = groups.get(groupKey)
+      group.schedules.push(schedule)
+
+      if (schedule.departure_time) {
+        const dateKey = schedule.departure_time.split('T')[0]
+        const timeLabel = new Date(schedule.departure_time).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+        if (!group.departuresByDate[dateKey]) {
+          group.departuresByDate[dateKey] = []
+        }
+        group.departuresByDate[dateKey].push({
+          scheduleId: schedule.id,
+          timeLabel,
+          schedule
+        })
+      }
+    })
+
+    return Array.from(groups.values()).map((group, index) => {
+      const departureDetails = Object.entries(group.departuresByDate)
+        .map(([date, entries]) => ({
+          date,
+          label: new Date(date).toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+          entries: entries.sort((a, b) => a.timeLabel.localeCompare(b.timeLabel))
+        }))
+        .sort((a, b) => new Date(a.date) - new Date(b.date))
+
+      return {
+        ...group,
+        display_index: index + 1,
+        departureDetails
+      }
+    })
+  }, [schedules])
+
   const openAdd = () => {
     setEditing(null)
     setForm({ 
@@ -73,29 +136,42 @@ export default function Schedules(){
   }
 
   const openEdit = (row) => {
-    setEditing(row)
+    const targetSchedule = row?.schedules ? row.schedules[0] : row
+    if (!targetSchedule) return
+
+    setEditing(targetSchedule)
     // Get bus_company_id from route or bus
-    const selectedRoute = routes.find(r => r.id === row.route_id)
-    const selectedBus = buses.find(b => b.id === row.bus_id)
+    const selectedRoute = routes.find(r => Number(r.id) === Number(targetSchedule.route_id))
+    const selectedBus = buses.find(b => Number(b.id) === Number(targetSchedule.bus_id))
     const busCompanyId = selectedRoute?.bus_company_id || selectedBus?.company_id || ''
     
     setForm({ 
-      route_id: row.route_id || '', 
+      route_id: targetSchedule.route_id || '', 
       bus_company_id: busCompanyId,
-      bus_id: row.bus_id || '', 
-      start_date: row.start_date || '', 
-      end_date: row.end_date || ''
+      bus_id: targetSchedule.bus_id || '', 
+      start_date: targetSchedule.start_date || '', 
+      end_date: targetSchedule.end_date || ''
     })
     
-    // Load departure time from existing schedule
-    if (row.departure_time) {
-      const departureDate = new Date(row.departure_time)
-      const dateKey = departureDate.toISOString().split('T')[0]
-      const timeKey = `${String(departureDate.getHours()).padStart(2, '0')}:${String(departureDate.getMinutes()).padStart(2, '0')}`
-      setDepartureTimesByDate({ [dateKey]: [timeKey] })
-    } else {
-      setDepartureTimesByDate({})
-    }
+    // Load departure times from schedule or group
+    const schedulesToLoad = row?.schedules || [targetSchedule]
+    const loadedTimes = {}
+
+    schedulesToLoad.forEach((schedule) => {
+      if (schedule.departure_time) {
+        const departureDate = new Date(schedule.departure_time)
+        const dateKey = departureDate.toISOString().split('T')[0]
+        const timeKey = `${String(departureDate.getHours()).padStart(2, '0')}:${String(departureDate.getMinutes()).padStart(2, '0')}`
+        if (!loadedTimes[dateKey]) {
+          loadedTimes[dateKey] = []
+        }
+        if (!loadedTimes[dateKey].includes(timeKey)) {
+          loadedTimes[dateKey].push(timeKey)
+        }
+      }
+    })
+
+    setDepartureTimesByDate(loadedTimes)
     
     setNewTimeInputs({})
     setOpen(true)
@@ -113,13 +189,13 @@ export default function Schedules(){
     if (!hasDepartureTimes) return alert('Vui lòng thêm ít nhất một giờ khởi hành')
     
     // Get bus capacity
-    const selectedBus = buses.find(b => b.id === form.bus_id)
+    const selectedBus = buses.find(b => Number(b.id) === Number(form.bus_id))
     if (!selectedBus || !selectedBus.capacity) return alert('Không tìm thấy thông tin xe')
     const totalSeats = selectedBus.capacity
 
     try {
       // Check if route has bus company, if not, update route with selected bus company
-      const selectedRoute = routes.find(r => r.id === form.route_id)
+      const selectedRoute = routes.find(r => Number(r.id) === Number(form.route_id))
       if (selectedRoute && !selectedRoute.bus_company_id) {
         // Update route with bus company
         await updateRoute({
@@ -131,7 +207,7 @@ export default function Schedules(){
           distance: selectedRoute.distance
         })
         // Update local state
-        const updatedRoute = routes.find(r => r.id === form.route_id)
+        const updatedRoute = routes.find(r => Number(r.id) === Number(form.route_id))
         if (updatedRoute) {
           updatedRoute.bus_company_id = form.bus_company_id
           setRoutes([...routes])
@@ -287,17 +363,23 @@ export default function Schedules(){
 
   // Get selected route duration for calculating arrival time
   const getRouteDuration = () => {
-    const selectedRoute = routes.find(r => r.id === form.route_id)
+    const selectedRoute = routes.find(r => Number(r.id) === Number(form.route_id))
     return selectedRoute?.duration || 0 // duration in minutes
   }
 
   const columns = [
-    { key: 'id', title: 'ID', dataIndex: 'id' },
+    { key: 'index', title: 'ID', dataIndex: 'display_index' },
     { 
       key: 'route', 
       title: 'Tuyến đường', 
       dataIndex: 'route', 
       render: (route) => route ? `${route.departure_station} → ${route.arrival_station}` : '-' 
+    },
+    {
+      key: 'bus_company',
+      title: 'Nhà xe',
+      dataIndex: 'bus_company',
+      render: (value, row) => value || row.bus?.company || '-'
     },
     { 
       key: 'bus', 
@@ -318,13 +400,65 @@ export default function Schedules(){
       render: (date) => date ? new Date(date).toLocaleDateString('vi-VN') : '-'
     },
     { 
-      key: 'departure_time', 
+      key: 'departure_details', 
       title: 'Giờ khởi hành', 
-      dataIndex: 'departure_time',
-      render: (time) => {
-        if (!time) return '-'
-        const date = new Date(time)
-        return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+      dataIndex: 'departureDetails',
+      render: (_, row) => {
+        if (!row.departureDetails || row.departureDetails.length === 0) {
+          return '-'
+        }
+
+        const isExpanded = expandedGroupId === row.id
+
+        return (
+          <div>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => setExpandedGroupId(isExpanded ? null : row.id)}
+            >
+              {isExpanded ? 'Ẩn chi tiết' : 'Xem chi tiết'}
+            </Button>
+
+            {isExpanded && (
+              <div className="mt-4 space-y-3">
+                {row.departureDetails.map(detail => (
+                  <div key={detail.date} className="border border-gray-200 rounded-lg p-3 bg-gray-50">
+                    <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                      {detail.label}
+                    </p>
+                    <div className="mt-2 space-y-2">
+                      {detail.entries.map(entry => (
+                        <div 
+                          key={entry.scheduleId} 
+                          className="flex items-center justify-between bg-white border border-gray-200 rounded-lg px-3 py-2"
+                        >
+                          <span className="text-sm font-medium text-gray-900">{entry.timeLabel}</span>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => openEdit(entry.schedule)}
+                            >
+                              Sửa
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="danger"
+                              onClick={() => remove(entry.scheduleId)}
+                            >
+                              Xóa
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )
       }
     },
     { key: 'available_seat', title: 'Ghế trống', dataIndex: 'available_seat' },
@@ -343,7 +477,7 @@ export default function Schedules(){
         }
       />
 
-      <Table data={schedules} columns={columns} onEdit={openEdit} onDelete={remove} />
+      <Table data={groupedSchedules} columns={columns} />
 
       <Modal isOpen={open} onClose={()=>setOpen(false)} title={editing ? 'Sửa lịch trình' : 'Thêm lịch trình mới'}>
         <div className="space-y-5">
@@ -352,11 +486,12 @@ export default function Schedules(){
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all duration-200 bg-white"
               value={form.route_id}
               onChange={(e) => {
-                const selectedRoute = routes.find(r => r.id === e.target.value)
+                const value = e.target.value ? Number(e.target.value) : ''
+                const selectedRoute = routes.find(r => Number(r.id) === Number(value))
                 // If route has bus company, auto-select it; otherwise leave empty for user to choose
                 setForm({
                   ...form, 
-                  route_id: e.target.value, 
+                  route_id: value, 
                   bus_company_id: selectedRoute?.bus_company_id || '',
                   bus_id: ''
                 })
@@ -376,7 +511,8 @@ export default function Schedules(){
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all duration-200 bg-white"
               value={form.bus_company_id}
               onChange={(e) => {
-                setForm({...form, bus_company_id: e.target.value, bus_id: ''})
+                const value = e.target.value ? Number(e.target.value) : ''
+                setForm({...form, bus_company_id: value, bus_id: ''})
               }}
               disabled={!form.route_id}
             >
@@ -388,7 +524,7 @@ export default function Schedules(){
               ))}
             </select>
             {form.route_id && (() => {
-              const selectedRoute = routes.find(r => r.id === form.route_id)
+              const selectedRoute = routes.find(r => Number(r.id) === Number(form.route_id))
               if (selectedRoute && !selectedRoute.bus_company_id) {
                 return <p className="text-xs text-blue-600 mt-1">Nhà xe này sẽ được gắn vào tuyến đường khi lưu</p>
               }
@@ -400,7 +536,10 @@ export default function Schedules(){
             <select
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all duration-200 bg-white"
               value={form.bus_id}
-              onChange={(e)=>setForm({...form, bus_id: e.target.value})}
+              onChange={(e)=>{
+                const value = e.target.value ? Number(e.target.value) : ''
+                setForm({...form, bus_id: value})
+              }}
               disabled={!form.bus_company_id}
             >
               <option value="">Chọn xe</option>
