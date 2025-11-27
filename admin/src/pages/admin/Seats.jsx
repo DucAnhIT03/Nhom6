@@ -6,7 +6,7 @@ import Header from '../../components/Header'
 import Button from '../../components/Button'
 import SeatMap from '../../components/SeatMap'
 import { getSeats, addSeat, updateSeat, deleteSeat, getSeatMap, addSeatsBulk, deleteSeatMap, updateSeatsBulk } from '../../services/seatService'
-import { getBuses } from '../../services/busService'
+import { getBuses, updateBusLayoutConfig } from '../../services/busService'
 import { getRoutes } from '../../services/routeService'
 import { getCompanies } from '../../services/busCompanyService'
 
@@ -360,7 +360,14 @@ useEffect(() => {
               : `Tầng ${config.floor || index + 1}`
         }))
       }
+      // Lưu vào localStorage (để admin dùng)
       saveSeatLayoutConfig(storedLayout.busId, storedLayout)
+      // Lưu vào database (để user dùng)
+      try {
+        await updateBusLayoutConfig(storedLayout.busId, storedLayout)
+      } catch (error) {
+        console.warn('Không thể lưu layout config vào database:', error)
+      }
       if (selectedBusId && Number(selectedBusId) === storedLayout.busId) {
         setLayoutConfig(storedLayout)
       }

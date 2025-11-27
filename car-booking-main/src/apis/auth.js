@@ -1,7 +1,7 @@
 import axiosClient from '../services/axiosClient';
 
 export const authApi = {
-  // User Auth
+
   registerUser: (data) => {
     return axiosClient.post('/user/auth/register', data);
   },
@@ -30,7 +30,7 @@ export const authApi = {
     return axiosClient.put('/user/auth/change-password', data);
   },
 
-  // Admin Auth
+
   registerAdmin: (data) => {
     return axiosClient.post('/admin/auth/register', data);
   },

@@ -100,6 +100,7 @@ CREATE TABLE buses (
     capacity INT NOT NULL,
     company_id INT NOT NULL,
     floors INT NOT NULL DEFAULT 2 COMMENT 'Số tầng: 1 hoặc 2',
+    seat_layout_config JSON NULL COMMENT 'Cấu hình layout ghế: { floors, floorConfigs: [{ floor, prefix, rows, columns, label }] }',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at DATETIME NULL,

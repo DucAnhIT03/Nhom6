@@ -71,6 +71,11 @@ export class SeatService {
       };
     });
 
+    // Thêm layout config từ bus nếu có
+    if (seats[0]?.bus?.seatLayoutConfig) {
+      (seatMap as any).layoutConfig = seats[0].bus.seatLayoutConfig;
+    }
+
     return ResponseUtil.success(seatMap, 'Lấy sơ đồ ghế thành công');
   }
 

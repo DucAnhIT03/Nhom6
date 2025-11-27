@@ -31,6 +31,9 @@ export class UpdateBusDto {
   @Min(1)
   @IsOptional()
   floors?: number;
+
+  @IsOptional()
+  seatLayoutConfig?: any;
 }
 
 

@@ -54,10 +54,31 @@ const BookTicket = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [seatModalOpen, setSeatModalOpen] = useState(false);
   const [activeSchedule, setActiveSchedule] = useState(null);
+  const [sortByTime, setSortByTime] = useState(null); // null, 'asc', 'desc'
+  const [sortByPrice, setSortByPrice] = useState(null); // null, 'asc', 'desc'
+  const [timeDropdownOpen, setTimeDropdownOpen] = useState(false);
+  const [priceDropdownOpen, setPriceDropdownOpen] = useState(false);
 
   useEffect(() => {
     setCurrentPage(1);
   }, [filters.departureId, filters.arrivalId, filters.date]);
+
+  // Đóng dropdown khi click ra ngoài
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest('.sort-dropdown-wrapper')) {
+        setTimeDropdownOpen(false);
+        setPriceDropdownOpen(false);
+      }
+    };
+
+    if (timeDropdownOpen || priceDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [timeDropdownOpen, priceDropdownOpen]);
 
   useEffect(() => {
     let isMounted = true;
@@ -118,6 +139,65 @@ const BookTicket = () => {
     setActiveSchedule(null);
   };
 
+  // Sắp xếp schedules
+  const sortedSchedules = useMemo(() => {
+    if (!schedules.length) return [];
+
+    let sorted = [...schedules];
+
+    // Sắp xếp theo giờ đi
+    if (sortByTime === 'asc') {
+      sorted.sort((a, b) => {
+        const timeA = new Date(a.departureTime || 0).getTime();
+        const timeB = new Date(b.departureTime || 0).getTime();
+        return timeA - timeB;
+      });
+    } else if (sortByTime === 'desc') {
+      sorted.sort((a, b) => {
+        const timeA = new Date(a.departureTime || 0).getTime();
+        const timeB = new Date(b.departureTime || 0).getTime();
+        return timeB - timeA;
+      });
+    }
+
+    // Sắp xếp theo giá (nếu có)
+    if (sortByPrice === 'asc') {
+      sorted.sort((a, b) => {
+        const priceA = a.route?.price || 0;
+        const priceB = b.route?.price || 0;
+        return priceA - priceB;
+      });
+    } else if (sortByPrice === 'desc') {
+      sorted.sort((a, b) => {
+        const priceA = a.route?.price || 0;
+        const priceB = b.route?.price || 0;
+        return priceB - priceA;
+      });
+    }
+
+    return sorted;
+  }, [schedules, sortByTime, sortByPrice]);
+
+  const handleSortByTime = (option) => {
+    if (option === 'none') {
+      setSortByTime(null);
+    } else {
+      setSortByTime(option);
+      setSortByPrice(null); // Reset price sort when time sort is selected
+    }
+    setTimeDropdownOpen(false);
+  };
+
+  const handleSortByPrice = (option) => {
+    if (option === 'none') {
+      setSortByPrice(null);
+    } else {
+      setSortByPrice(option);
+      setSortByTime(null); // Reset time sort when price sort is selected
+    }
+    setPriceDropdownOpen(false);
+  };
+
   return (
     <div>
       <TopHeader />
@@ -139,12 +219,80 @@ const BookTicket = () => {
       <div className="filer-box">
         <div className="sort-bar">
           <span>Sắp xếp theo tuyến đường</span>
-          <button className="sort-btn" type="button">
-            Giờ đi <RiArrowDropDownLine size={16} />
-          </button>
-          <button className="sort-btn" type="button">
-            Mức giá <RiArrowDropDownLine size={16} />
-          </button>
+          <div className="sort-dropdown-wrapper">
+            <button 
+              className="sort-btn" 
+              type="button"
+              onClick={() => {
+                setTimeDropdownOpen(!timeDropdownOpen);
+                setPriceDropdownOpen(false);
+              }}
+            >
+              Giờ đi <RiArrowDropDownLine size={16} />
+            </button>
+            {timeDropdownOpen && (
+              <div className="sort-dropdown">
+                <button
+                  type="button"
+                  className={`sort-dropdown-item ${sortByTime === null ? 'active' : ''}`}
+                  onClick={() => handleSortByTime('none')}
+                >
+                  Mặc định
+                </button>
+                <button
+                  type="button"
+                  className={`sort-dropdown-item ${sortByTime === 'asc' ? 'active' : ''}`}
+                  onClick={() => handleSortByTime('asc')}
+                >
+                  Sớm nhất
+                </button>
+                <button
+                  type="button"
+                  className={`sort-dropdown-item ${sortByTime === 'desc' ? 'active' : ''}`}
+                  onClick={() => handleSortByTime('desc')}
+                >
+                  Muộn nhất
+                </button>
+              </div>
+            )}
+          </div>
+          <div className="sort-dropdown-wrapper">
+            <button 
+              className="sort-btn" 
+              type="button"
+              onClick={() => {
+                setPriceDropdownOpen(!priceDropdownOpen);
+                setTimeDropdownOpen(false);
+              }}
+            >
+              Mức giá <RiArrowDropDownLine size={16} />
+            </button>
+            {priceDropdownOpen && (
+              <div className="sort-dropdown">
+                <button
+                  type="button"
+                  className={`sort-dropdown-item ${sortByPrice === null ? 'active' : ''}`}
+                  onClick={() => handleSortByPrice('none')}
+                >
+                  Mặc định
+                </button>
+                <button
+                  type="button"
+                  className={`sort-dropdown-item ${sortByPrice === 'asc' ? 'active' : ''}`}
+                  onClick={() => handleSortByPrice('asc')}
+                >
+                  Giá thấp đến cao
+                </button>
+                <button
+                  type="button"
+                  className={`sort-dropdown-item ${sortByPrice === 'desc' ? 'active' : ''}`}
+                  onClick={() => handleSortByPrice('desc')}
+                >
+                  Giá cao đến thấp
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
       <div className="searchbus-container">
@@ -170,7 +318,7 @@ const BookTicket = () => {
           )}
           {!loading &&
             !error &&
-            schedules.map((schedule) => (
+            sortedSchedules.map((schedule) => (
               <BusCard
                 key={schedule.id}
                 schedule={schedule}

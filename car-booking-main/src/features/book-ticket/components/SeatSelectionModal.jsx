@@ -1,59 +1,59 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { IoClose } from "react-icons/io5";
 import { getSeatsByBus } from "../../../services/seatService";
+import { getSeatTypePrices } from "../../../services/seatTypePriceService";
 import "./SeatSelectionModal.css";
 
-const LAYOUT_STORAGE_KEY = 'seat_layout_configs';
-
-const loadSeatLayoutConfig = (busId) => {
-  if (typeof window === 'undefined') return null;
-  try {
-    const data = JSON.parse(localStorage.getItem(LAYOUT_STORAGE_KEY) || '{}');
-    return data?.[busId] || null;
-  } catch (error) {
-    console.warn('Cannot load seat layout configs', error);
-    return null;
-  }
-};
 
 const SeatSelectionModal = ({ isOpen, schedule, onClose }) => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [seatData, setSeatData] = useState({ seats: [], seatMap: {}, busName: "", busFloors: 1 });
   const [selectedSeats, setSelectedSeats] = useState([]);
-  const [layoutConfig, setLayoutConfig] = useState(null);
+  const [seatTypePriceMap, setSeatTypePriceMap] = useState({});
 
   useEffect(() => {
     if (!isOpen || !schedule?.busId) {
       setSeatData({ seats: [], seatMap: {}, busName: "", busFloors: 1 });
       setSelectedSeats([]);
       setError("");
-      setLayoutConfig(null);
+      setSeatTypePriceMap({});
       return;
     }
 
-    // Load layout config từ localStorage
-    const layout = loadSeatLayoutConfig(Number(schedule.busId));
-    console.log('Layout config loaded:', {
-      busId: schedule.busId,
-      layout,
-      hasConfig: !!layout,
-      floorConfigs: layout?.floorConfigs,
-      floors: layout?.floors,
-      allConfigs: typeof window !== 'undefined' ? JSON.parse(localStorage.getItem(LAYOUT_STORAGE_KEY) || '{}') : {},
-    });
-    
-    if (!layout) {
-      console.warn(`⚠️ Không tìm thấy layout config cho busId ${schedule.busId}. Vui lòng setup layout trong admin trước.`);
-    }
-    
-    setLayoutConfig(layout);
-
     let isMounted = true;
-    const fetchSeats = async () => {
+    const fetchSeatsAndPrices = async () => {
       setLoading(true);
       setError("");
       try {
+        // 1. Lấy danh sách giá vé theo loại cho tuyến / nhà xe hiện tại
+        const routeId = schedule.routeId || schedule.route?.id;
+        const companyId =
+          schedule.route?.busCompanyId ||
+          schedule.route?.busCompany?.id ||
+          schedule.bus?.company?.id ||
+          undefined;
+
+        let seatPrices = [];
+        if (routeId) {
+          seatPrices = await getSeatTypePrices({
+            routeId,
+            companyId,
+          });
+        }
+        if (isMounted) {
+          const map = {};
+          seatPrices.forEach((item) => {
+            if (item?.seatType) {
+              map[item.seatType] = Number(item.price) || 0;
+            }
+          });
+          setSeatTypePriceMap(map);
+        }
+
+        // 2. Lấy sơ đồ ghế của xe
         const data = await getSeatsByBus(schedule.busId);
         if (!isMounted) return;
         console.log('Seat data from API:', {
@@ -62,10 +62,14 @@ const SeatSelectionModal = ({ isOpen, schedule, onClose }) => {
           seatMapCount: Object.keys(data.seatMap || {}).length,
           busFloors: data.busFloors,
           busName: data.busName,
+          layoutConfig: data.layoutConfig,
           allSeatNumbers: data.seats?.map(s => s.seatNumber || s.seat_number).slice(0, 10),
           lastSeatNumbers: data.seats?.map(s => s.seatNumber || s.seat_number).slice(-10),
         });
-        setSeatData(data);
+        setSeatData({
+          ...data,
+          layoutConfig: data.layoutConfig || null,
+        });
       } catch (err) {
         if (!isMounted) return;
         console.error("Failed to load seat map:", err);
@@ -80,7 +84,7 @@ const SeatSelectionModal = ({ isOpen, schedule, onClose }) => {
       }
     };
 
-    fetchSeats();
+    fetchSeatsAndPrices();
     return () => {
       isMounted = false;
     };
@@ -129,103 +133,10 @@ const SeatSelectionModal = ({ isOpen, schedule, onClose }) => {
     onClose?.();
   };
 
-  // Normalize layout config giống như SeatMap
-  const normalizedLayout = useMemo(() => {
-    if (!layoutConfig?.floorConfigs?.length) return null;
-    const map = {};
-    layoutConfig.floorConfigs.forEach((config, index) => {
-      const prefix = (config.prefix || '').toUpperCase();
-      if (!prefix) return;
-      map[prefix] = {
-        ...config,
-        prefix,
-        rows: Number(config.rows) || 1,
-        columns: Number(config.columns) || 1,
-        label:
-          config.label ||
-          (config.floor === 1
-            ? 'Tầng dưới'
-            : config.floor === 2
-              ? 'Tầng trên'
-              : `Tầng ${config.floor || index + 1}`),
-      };
-    });
-    return map;
-  }, [layoutConfig]);
-
   const defaultFloorNames = {
     'A': 'Tầng dưới',
     'B': 'Tầng trên',
     'C': 'Tầng 3',
-  };
-
-  // Tìm layout cho một ghế dựa vào prefix
-  const findLayoutForSeat = (seatNumber) => {
-    if (!normalizedLayout || !seatNumber) return null;
-    const upperSeat = seatNumber.toUpperCase();
-    const prefixes = Object.keys(normalizedLayout).sort((a, b) => b.length - a.length);
-    for (const prefix of prefixes) {
-      if (upperSeat.startsWith(prefix)) {
-        return normalizedLayout[prefix];
-      }
-    }
-    return null;
-  };
-
-  // Parse vị trí ghế giống như SeatMap
-  const parseSeatPosition = (seatNumber, fallbackIndex = 0) => {
-    const layout = findLayoutForSeat(seatNumber);
-    if (layout) {
-      const numericPart = seatNumber.substring(layout.prefix.length);
-      const order = parseInt(numericPart, 10);
-      // Sử dụng columns từ layout config (bắt buộc)
-      const columns = Math.max(1, Number(layout.columns) || 1);
-      if (order && order > 0) {
-        // Tính row và col dựa vào order và columns
-        // Ví dụ: order=1, columns=5 => row=1, col=1
-        //        order=5, columns=5 => row=1, col=5
-        //        order=6, columns=5 => row=2, col=1
-        const row = Math.floor((order - 1) / columns) + 1;
-        const col = ((order - 1) % columns) + 1;
-        return {
-          floor: layout.prefix,
-          row,
-          col,
-          display: numericPart || order.toString().padStart(2, '0'),
-          columns, // Luôn dùng columns từ layout config
-        };
-      }
-    }
-
-    // Fallback parsing - nhận diện prefix A, B, C...
-    const floorMatch = seatNumber.match(/^([A-Z]+)/i);
-    const floor = floorMatch ? floorMatch[1].toUpperCase() : (seatNumber.charAt(0).toUpperCase() || `F${fallbackIndex}`);
-    const numStr = seatNumber.substring(floor.length);
-    const num = parseInt(numStr, 10) || fallbackIndex + 1;
-    
-    // Ưu tiên dùng columns từ layout config
-    let colsPerRow = 5; // Mặc định 5 cột
-    if (normalizedLayout && normalizedLayout[floor]) {
-      colsPerRow = Math.max(1, Number(normalizedLayout[floor].columns) || 5);
-    } else {
-      // Nếu không có layout config, ước tính dựa vào prefix
-      // A thường là tầng dưới (4-5 cột), B là tầng trên (3-5 cột)
-      if (floor === 'A') colsPerRow = 5;
-      else if (floor === 'B') colsPerRow = 5;
-      else colsPerRow = 5;
-    }
-    
-    // Sử dụng cùng logic như khi có layout config
-    const row = Math.floor((num - 1) / colsPerRow) + 1;
-    const col = ((num - 1) % colsPerRow) + 1;
-
-    return {
-      floor,
-      row,
-      col,
-      display: numStr || num.toString().padStart(2, '0'),
-      columns: colsPerRow,
-    };
   };
 
   const normalizedSeats = useMemo(() => {
@@ -242,17 +153,38 @@ const SeatSelectionModal = ({ isOpen, schedule, onClose }) => {
     const allSeats = seats.map(seat => {
       const seatNumber = (seat.seatNumber || seat.seat_number || '').toUpperCase();
       const mapInfo = seatMapByNumber.get(seatNumber);
+      const rawSeatType =
+        seat.seatType || seat.seat_type || mapInfo?.seat?.seatType || 'STANDARD';
+      const configuredPrice =
+        seatTypePriceMap[rawSeatType] ?? mapInfo?.seat?.priceForSeatType ?? 0;
+      const finalPrice =
+        Number(
+          seat.priceForSeatType ||
+            seat.price_for_seat_type ||
+            configuredPrice,
+        ) || 0;
       
       return {
         id: seat.id || seatNumber,
         seatNumber: seat.seatNumber || seat.seat_number || seatNumber,
         seat_number: seat.seatNumber || seat.seat_number || seatNumber,
-        seatType: seat.seatType || seat.seat_type || mapInfo?.seat?.seatType || 'STANDARD',
-        seat_type: seat.seatType || seat.seat_type || mapInfo?.seat?.seatType || 'STANDARD',
+        seatType: rawSeatType,
+        seat_type: rawSeatType,
         status: seat.status || mapInfo?.seat?.status || 'AVAILABLE',
-        isHidden: seat.isHidden ?? seat.is_hidden ?? mapInfo?.seat?.isHidden ?? mapInfo?.seat?.is_hidden ?? false,
-        is_hidden: seat.isHidden ?? seat.is_hidden ?? mapInfo?.seat?.isHidden ?? mapInfo?.seat?.is_hidden ?? false,
-        priceForSeatType: seat.priceForSeatType || seat.price_for_seat_type || mapInfo?.seat?.priceForSeatType || 0,
+        isHidden:
+          seat.isHidden ??
+          seat.is_hidden ??
+          mapInfo?.seat?.isHidden ??
+          mapInfo?.seat?.is_hidden ??
+          false,
+        is_hidden:
+          seat.isHidden ??
+          seat.is_hidden ??
+          mapInfo?.seat?.isHidden ??
+          mapInfo?.seat?.is_hidden ??
+          false,
+        priceForSeatType: finalPrice,
+        price_for_seat_type: finalPrice,
         ...seat,
       };
     });
@@ -292,127 +224,151 @@ const SeatSelectionModal = ({ isOpen, schedule, onClose }) => {
     return map;
   }, [normalizedSeats]);
 
+  const selectedSeatDetails = useMemo(
+    () =>
+      selectedSeats
+        .map((id) => seatsById.get(id))
+        .filter(Boolean),
+    [selectedSeats, seatsById],
+  );
+
+  const selectedTotalPrice = useMemo(
+    () =>
+      selectedSeatDetails.reduce(
+        (sum, seat) => sum + (Number(seat.priceForSeatType || seat.price_for_seat_type) || 0),
+        0,
+      ),
+    [selectedSeatDetails],
+  );
+
+  const formatCurrency = (value) => {
+    if (!value || Number.isNaN(Number(value))) return '0₫';
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND',
+      maximumFractionDigits: 0,
+    }).format(value);
+  };
+
+  // Normalize layout config từ API
+  const normalizedLayout = useMemo(() => {
+    const layoutConfig = seatData.layoutConfig;
+    if (!layoutConfig?.floorConfigs?.length) return null;
+    const map = {};
+    layoutConfig.floorConfigs.forEach((config) => {
+      const prefix = (config.prefix || '').toUpperCase();
+      if (!prefix) return;
+      map[prefix] = {
+        ...config,
+        prefix,
+        rows: Number(config.rows) || 1,
+        columns: Number(config.columns) || 1,
+        label: config.label || defaultFloorNames[prefix] || `Tầng ${prefix}`,
+      };
+    });
+    return map;
+  }, [seatData.layoutConfig]);
+
   // Nhóm ghế theo tầng và sắp xếp theo hàng, cột (giống SeatMap)
   const groupSeatsByFloor = useMemo(() => {
     const floors = {};
 
-    normalizedSeats.forEach((seat, index) => {
-      const seatNumber = seat.seatNumber || seat.seat_number || '';
-      const pos = parseSeatPosition(seatNumber, index);
-      const floor = pos.floor;
+    // Bước 1: Nhóm ghế theo prefix (A, B, C...)
+    normalizedSeats.forEach((seat) => {
+      const seatNumber = (seat.seatNumber || seat.seat_number || '').toUpperCase();
+      const floorMatch = seatNumber.match(/^([A-Z]+)/);
+      const floor = floorMatch ? floorMatch[1] : 'A';
+      
       if (!floors[floor]) {
-        // Ưu tiên dùng columns từ layout config
-        const layoutColumns = normalizedLayout?.[floor]?.columns;
-        const defaultColumns = layoutColumns || pos.columns || 5;
-        
         floors[floor] = {
           seats: [],
-          columns: defaultColumns,
-          label: normalizedLayout?.[floor]?.label || defaultFloorNames[floor] || `Tầng ${floor}`,
+          seatNumbers: [],
         };
       }
-      const seatWithPos = {
-        ...seat,
-        position: pos,
-      };
-      
-      // Đảm bảo columns luôn lấy từ layout config nếu có
-      if (normalizedLayout?.[floor]?.columns) {
-        floors[floor].columns = normalizedLayout[floor].columns;
-      } else if (pos.columns) {
-        floors[floor].columns = pos.columns;
-      }
-      
-      floors[floor].seats.push(seatWithPos);
+      floors[floor].seats.push(seat);
+      floors[floor].seatNumbers.push(seatNumber);
     });
 
-    // Sắp xếp ghế trong mỗi tầng: theo hàng trước, sau đó theo cột
+    // Bước 2: Sử dụng layout config từ API nếu có, nếu không thì tự tính
     Object.keys(floors).forEach(floor => {
-      floors[floor].seats.sort((a, b) => {
-        if (a.position.row !== b.position.row) {
-          return a.position.row - b.position.row;
-        }
-        return a.position.col - b.position.col;
-      });
-    });
-
-    const busCapacity = schedule?.bus?.capacity || seatData.busFloors || 0;
-    const totalSeats = normalizedSeats.length;
-    
-    // Chỉ cảnh báo khi số ghế vượt quá capacity hoặc thiếu quá nhiều
-    if (busCapacity > 0) {
-      if (totalSeats > busCapacity) {
-        console.warn(`⚠️ Số ghế vượt quá capacity: API trả về ${totalSeats} ghế nhưng capacity chỉ ${busCapacity} cho busId ${schedule?.busId}`);
-      } else if (totalSeats < busCapacity && (busCapacity - totalSeats) > 5) {
-        // Chỉ cảnh báo nếu thiếu hơn 5 ghế
-        console.info(`ℹ️ Số ghế: ${totalSeats}/${busCapacity} (capacity: ${busCapacity}) cho busId ${schedule?.busId}`);
-      } else if (totalSeats !== busCapacity) {
-        // Chênh lệch nhỏ, chỉ log info
-        console.info(`ℹ️ Số ghế: ${totalSeats}/${busCapacity} cho busId ${schedule?.busId}`);
-      }
-    }
-    
-    console.log('Grouped seats by floor:', {
-      totalSeats: normalizedSeats.length,
-      busCapacity,
-      busId: schedule?.busId,
-      hasLayoutConfig: !!normalizedLayout,
-      layoutConfig: normalizedLayout,
-      floors: Object.keys(floors).map(floor => {
-        const layoutForFloor = normalizedLayout?.[floor];
-        const floorSeats = floors[floor].seats;
-        const seatsByRow = {};
-        floorSeats.forEach(seat => {
-          const row = seat.position.row;
-          if (!seatsByRow[row]) seatsByRow[row] = [];
-          seatsByRow[row].push(seat);
-        });
+      const floorSeats = floors[floor].seats;
+      const seatNumbers = floors[floor].seatNumbers.sort();
+      const layoutForFloor = normalizedLayout?.[floor];
+      
+      // Ưu tiên dùng layout config từ API
+      let detectedColumns = layoutForFloor?.columns || 5;
+      let detectedRows = layoutForFloor?.rows;
+      
+      // Nếu không có layout config, tự tính
+      if (!layoutForFloor) {
+        const numbers = seatNumbers.map(sn => {
+          const numStr = sn.replace(/^[A-Z]+/, '');
+          return parseInt(numStr, 10) || 0;
+        }).filter(n => n > 0).sort((a, b) => a - b);
         
-        return {
+        if (numbers.length > 0) {
+          const maxNum = Math.max(...numbers);
+          const minNum = Math.min(...numbers);
+          
+          // Thử các giá trị columns phổ biến
+          let bestColumns = 5;
+          let bestScore = Infinity;
+          
+          for (const cols of [3, 4, 5, 6, 7, 8]) {
+            const estimatedRows = Math.ceil(maxNum / cols);
+            const totalSeats = estimatedRows * cols;
+            const seatDiff = Math.abs(numbers.length - totalSeats);
+            const isContinuous = numbers.length === (maxNum - minNum + 1);
+            const patternMatch = isContinuous && (maxNum <= totalSeats);
+            const score = patternMatch ? seatDiff : seatDiff + 10;
+            
+            if (score < bestScore) {
+              bestScore = score;
+              bestColumns = cols;
+            }
+          }
+          
+          detectedColumns = bestColumns;
+        }
+      }
+      
+      // Sắp xếp ghế theo số thứ tự
+      floorSeats.sort((a, b) => {
+        const numA = parseInt((a.seatNumber || a.seat_number || '').replace(/^[A-Z]+/, ''), 10) || 0;
+        const numB = parseInt((b.seatNumber || b.seat_number || '').replace(/^[A-Z]+/, ''), 10) || 0;
+        return numA - numB;
+      });
+      
+      // Tính row và col cho mỗi ghế
+      floorSeats.forEach((seat, idx) => {
+        const seatNumber = (seat.seatNumber || seat.seat_number || '').toUpperCase();
+        const numStr = seatNumber.replace(/^[A-Z]+/, '');
+        const num = parseInt(numStr, 10) || (idx + 1);
+        const row = Math.floor((num - 1) / detectedColumns) + 1;
+        const col = ((num - 1) % detectedColumns) + 1;
+        
+        seat.position = {
           floor,
-          count: floorSeats.length,
-          columns: floors[floor].columns,
-          columnsFromLayout: layoutForFloor?.columns,
-          rowsFromLayout: layoutForFloor?.rows,
-          label: floors[floor].label,
-          rowsCount: Object.keys(seatsByRow).length,
-          seatsPerRow: Object.keys(seatsByRow).map(row => ({
-            row: Number(row),
-            count: seatsByRow[row].length,
-            seats: seatsByRow[row].map(s => s.seatNumber || s.seat_number),
-          })),
-          sampleSeats: floorSeats.slice(0, 5).map(s => ({
-            seatNumber: s.seatNumber || s.seat_number,
-            row: s.position.row,
-            col: s.position.col,
-          })),
+          row,
+          col,
+          display: numStr || num.toString().padStart(2, '0'),
+          columns: detectedColumns,
         };
-      }),
+      });
+      
+      floors[floor].columns = detectedColumns;
+      floors[floor].label = layoutForFloor?.label || defaultFloorNames[floor] || (floor === 'A' ? 'Tầng dưới' : floor === 'B' ? 'Tầng trên' : `Tầng ${floor}`);
     });
 
     return floors;
   }, [normalizedSeats, normalizedLayout]);
 
   const floorOrder = useMemo(() => {
-    if (normalizedLayout) {
-      const orderFromConfig = Object.values(normalizedLayout)
-        .sort((a, b) => (a.floor || 0) - (b.floor || 0))
-        .map(cfg => cfg.prefix)
-        .filter(prefix => groupSeatsByFloor[prefix]);
-      
-      // Nếu có ghế nhưng không có trong config, thêm vào
-      const allFloors = Object.keys(groupSeatsByFloor);
-      const missingFloors = allFloors.filter(f => !orderFromConfig.includes(f));
-      
-      return [...orderFromConfig, ...missingFloors.sort()];
-    }
-    
-    // Khi không có layout config, sắp xếp theo thứ tự A, B, C...
+    // Sắp xếp theo thứ tự A, B, C...
     return Object.keys(groupSeatsByFloor).sort((a, b) => {
-      // A trước B, B trước C...
       return a.localeCompare(b);
     });
-  }, [normalizedLayout, groupSeatsByFloor]);
+  }, [groupSeatsByFloor]);
 
   const legend = [
     { label: "Đã bán", color: "#9ca3af" },
@@ -597,15 +553,17 @@ const SeatSelectionModal = ({ isOpen, schedule, onClose }) => {
           <div>
             <p>
               Đã chọn:{" "}
-              {selectedSeats.length > 0
-                ? selectedSeats
-                    .map((id) => {
-                      const seat = seatsById.get(id);
-                      return seat?.seatNumber || seat?.seat_number || id;
-                    })
+              {selectedSeatDetails.length > 0
+                ? selectedSeatDetails
+                    .map((seat) => seat.seatNumber || seat.seat_number || seat.id)
                     .join(", ")
                 : "Chưa chọn ghế nào"}
             </p>
+            {selectedSeatDetails.length > 0 && (
+              <p style={{ marginTop: 4, fontSize: 14 }}>
+                Tạm tính: <strong>{formatCurrency(selectedTotalPrice)}</strong>
+              </p>
+            )}
           </div>
           <div className="seat-modal-actions">
             <button className="seat-cancel-btn" onClick={handleClose} type="button">
@@ -616,11 +574,21 @@ const SeatSelectionModal = ({ isOpen, schedule, onClose }) => {
               type="button"
               disabled={selectedSeats.length === 0}
               onClick={() => {
-                alert(
-                  `Bạn đã chọn ghế: ${selectedSeats.join(
-                    ", "
-                  )}. Tính năng đặt vé đang được phát triển.`
-                );
+                const seatDetails = selectedSeatDetails.map((seat) => ({
+                  id: seat.id,
+                  seatNumber: seat.seatNumber || seat.seat_number,
+                  label: seat.seatNumber || seat.seat_number,
+                  priceForSeatType: seat.priceForSeatType || seat.price_for_seat_type || 0,
+                }));
+
+                navigate("/checkout", {
+                  state: {
+                    schedule,
+                    seats: selectedSeats,
+                    seatDetails,
+                  },
+                });
+                onClose?.();
               }}
             >
               Xác nhận

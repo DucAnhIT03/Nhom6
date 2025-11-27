@@ -20,6 +20,7 @@ export default function FormInput({
   checked,
   rows = 4,
   className = '',
+  id,
   ...rest
 }) {
   const renderField = () => {
@@ -28,6 +29,7 @@ export default function FormInput({
     if (type === 'textarea') {
       return (
         <textarea
+          id={id}
           className={`${baseFieldClass} resize-none ${className}`}
           value={value}
           onChange={onChange}
@@ -42,6 +44,7 @@ export default function FormInput({
     if (type === 'select') {
       return (
         <select
+          id={id}
           className={`${baseFieldClass} ${className}`}
           value={value}
           onChange={onChange}
@@ -61,6 +64,7 @@ export default function FormInput({
       return (
         <div className="flex items-center gap-2">
           <input
+            id={id}
             type="checkbox"
             className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
             checked={checked}
@@ -75,6 +79,7 @@ export default function FormInput({
 
     return (
       <input
+        id={id}
         type={type}
         className={`${baseFieldClass} ${className}`}
         value={value}
@@ -92,7 +97,10 @@ export default function FormInput({
   return (
     <div className="mb-4">
       {label && (
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label
+          htmlFor={id}
+          className="block text-sm font-medium text-gray-700 mb-2"
+        >
           {label}
           {required && <span className="text-red-500 ml-1">*</span>}
         </label>

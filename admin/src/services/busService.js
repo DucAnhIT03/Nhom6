@@ -157,3 +157,21 @@ export async function deleteBus(id) {
     throw error;
   }
 }
+
+/**
+ * Cập nhật layout config của xe
+ * @param {number} busId - ID của xe
+ * @param {Object} layoutConfig - Cấu hình layout: { floors, floorConfigs: [...] }
+ * @returns {Promise<Object>} Response từ server
+ */
+export async function updateBusLayoutConfig(busId, layoutConfig) {
+  try {
+    const response = await axiosClient.put(`/buses/${busId}`, {
+      seatLayoutConfig: layoutConfig,
+    });
+    return response;
+  } catch (error) {
+    console.error('Error updating bus layout config:', error);
+    throw error;
+  }
+}

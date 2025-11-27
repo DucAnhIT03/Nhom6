@@ -1,4 +1,7 @@
+import { useEffect, useState } from "react";
 import { IoBus } from "react-icons/io5";
+import { getSeatTypePrices } from "../../../services/seatTypePriceService";
+import TripDetailModal from "./TripDetailModal";
 
 const currency = new Intl.NumberFormat("vi-VN", {
   style: "currency",
@@ -22,7 +25,76 @@ const formatDuration = (minutes) => {
   return `${mins}’`;
 };
 
-export default function BusCard({ schedule, onBookClick }) {
+export default function BusCard({ schedule, onBookClick, onDetailClick }) {
+  const [minPrice, setMinPrice] = useState(null);
+  const [loadingPrice, setLoadingPrice] = useState(false);
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (!schedule) return;
+
+    const loadSeatTypePrices = async () => {
+      const route = schedule.route || {};
+      const routeId = route?.id || schedule.routeId;
+      const companyId =
+        schedule.bus?.company?.id ||
+        route?.busCompany?.id ||
+        route?.busCompanyId;
+
+      if (!routeId) {
+        // Nếu không có routeId, dùng route.price làm fallback
+        const routePrice = route?.price;
+        if (typeof routePrice === "number" && routePrice > 0) {
+          setMinPrice(routePrice);
+        }
+        return;
+      }
+
+      setLoadingPrice(true);
+      try {
+        const seatPrices = await getSeatTypePrices({
+          routeId,
+          companyId,
+        });
+
+        if (seatPrices && seatPrices.length > 0) {
+          // Lấy giá nhỏ nhất từ seat type prices
+          const prices = seatPrices
+            .map((item) => Number(item.price) || 0)
+            .filter((price) => price > 0);
+          
+          if (prices.length > 0) {
+            const min = Math.min(...prices);
+            setMinPrice(min);
+          } else {
+            // Nếu không có giá hợp lệ, dùng route.price
+            const routePrice = route?.price;
+            if (typeof routePrice === "number" && routePrice > 0) {
+              setMinPrice(routePrice);
+            }
+          }
+        } else {
+          // Nếu không có seat type prices, dùng route.price
+          const routePrice = route?.price;
+          if (typeof routePrice === "number" && routePrice > 0) {
+            setMinPrice(routePrice);
+          }
+        }
+      } catch (error) {
+        console.error("Error loading seat type prices:", error);
+        // Fallback về route.price
+        const routePrice = route?.price;
+        if (typeof routePrice === "number" && routePrice > 0) {
+          setMinPrice(routePrice);
+        }
+      } finally {
+        setLoadingPrice(false);
+      }
+    };
+
+    loadSeatTypePrices();
+  }, [schedule]);
+
   if (!schedule) return null;
 
   const bus = schedule.bus || {};
@@ -51,10 +123,15 @@ export default function BusCard({ schedule, onBookClick }) {
         )
       : null);
   const durationLabel = formatDuration(durationMinutes);
+  
+  // Ưu tiên dùng minPrice từ seat type prices, nếu không có thì dùng route.price
   const priceLabel =
-    typeof route?.price === "number"
+    minPrice !== null && minPrice > 0
+      ? currency.format(minPrice)
+      : typeof route?.price === "number" && route.price > 0
       ? currency.format(route.price)
       : "Liên hệ";
+  
   const availableSeats =
     typeof schedule.availableSeat === "number" ? schedule.availableSeat : 0;
   const totalSeats =
@@ -98,7 +175,18 @@ export default function BusCard({ schedule, onBookClick }) {
               ? new Date(schedule.departureTime).toLocaleDateString("vi-VN")
               : "Đang cập nhật"}
           </p>
-          <p className="more-info">Thông tin chi tiết</p>
+          <p 
+            className="more-info" 
+            onClick={() => {
+              if (onDetailClick) {
+                onDetailClick(schedule);
+              } else {
+                setDetailModalOpen(true);
+              }
+            }}
+          >
+            Thông tin chi tiết
+          </p>
         </div>
       </div>
 
@@ -119,6 +207,12 @@ export default function BusCard({ schedule, onBookClick }) {
           Đặt vé
         </button>
       </div>
+
+      <TripDetailModal
+        isOpen={detailModalOpen}
+        onClose={() => setDetailModalOpen(false)}
+        schedule={schedule}
+      />
     </div>
   );
 }

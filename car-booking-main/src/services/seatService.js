@@ -32,6 +32,7 @@ export const getSeatsByBus = async (busId) => {
         busFloors,
         seats,
         seatMap: response.data.seatMap || {},
+        layoutConfig: response.data.layoutConfig || null,
       };
     }
     if (Array.isArray(response)) {

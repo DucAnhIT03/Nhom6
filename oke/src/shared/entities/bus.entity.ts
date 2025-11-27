@@ -33,6 +33,14 @@ export class Bus {
   @Column({ default: 2, comment: 'Số tầng: 1 hoặc 2' })
   floors: number;
 
+  @Column({
+    name: 'seat_layout_config',
+    type: 'json',
+    nullable: true,
+    comment: 'Cấu hình layout ghế: { floors, floorConfigs: [{ floor, prefix, rows, columns, label }] }',
+  })
+  seatLayoutConfig?: any;
+
   @Column({ name: 'company_id' })
   companyId: number;
 
