@@ -11,6 +11,10 @@ export class UpdateBusCompanyDto {
 
   @IsString()
   @IsOptional()
+  address?: string;
+
+  @IsString()
+  @IsOptional()
   descriptions?: string;
 }
 

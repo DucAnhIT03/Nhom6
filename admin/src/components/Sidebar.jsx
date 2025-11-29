@@ -55,17 +55,27 @@ export default function Sidebar(){
 
       {/* Navigation */}
       <nav className="flex-1 mt-2 overflow-y-auto px-2 py-4">
-        <MenuItem to="/admin">Dashboard</MenuItem>
-        <MenuItem to="/admin/users">Quản lý Người dùng</MenuItem>
-        <MenuItem to="/admin/stations">Quản lý Bến xe</MenuItem>
-        <MenuItem to="/admin/companies">Quản lý Nhà xe</MenuItem>
-        <MenuItem to="/admin/buses">Quản lý Xe</MenuItem>
-        <MenuItem to="/admin/bus-station">Quản lý Xe ở bến</MenuItem>
-        <MenuItem to="/admin/routes">Quản lý Tuyến đường</MenuItem>
-        <MenuItem to="/admin/schedules">Quản lý Lịch trình</MenuItem>
-        <MenuItem to="/admin/seats">Quản lý Ghế ngồi</MenuItem>
-        <MenuItem to="/admin/seat-type-prices">Giá vé theo loại</MenuItem>
-        <MenuItem to="/admin/posts">Quản lý Bài viết</MenuItem>
+        {user?.roles?.some(r => r === 'ROLE_ADMIN' || r.roleName === 'ROLE_ADMIN') ? (
+          <>
+            <MenuItem to="/admin">Dashboard</MenuItem>
+            <MenuItem to="/admin/users">Quản lý Người dùng</MenuItem>
+            <MenuItem to="/admin/stations">Quản lý Bến xe</MenuItem>
+            <MenuItem to="/admin/companies">Quản lý Nhà xe</MenuItem>
+            <MenuItem to="/admin/buses">Quản lý Xe</MenuItem>
+            <MenuItem to="/admin/bus-station">Quản lý Xe ở bến</MenuItem>
+            <MenuItem to="/admin/routes">Quản lý Tuyến đường</MenuItem>
+            <MenuItem to="/admin/schedules">Quản lý Lịch trình</MenuItem>
+            <MenuItem to="/admin/seats">Quản lý Ghế ngồi</MenuItem>
+            <MenuItem to="/admin/seat-status-monitor">Trạng thái ghế (Real-time)</MenuItem>
+            <MenuItem to="/admin/seat-type-prices">Giá vé theo loại</MenuItem>
+            <MenuItem to="/admin/posts">Quản lý Bài viết</MenuItem>
+            <MenuItem to="/admin/banners">Quản lý Banner</MenuItem>
+          </>
+        ) : user?.roles?.some(r => r === 'ROLE_STAFF' || r.roleName === 'ROLE_STAFF') ? (
+          <>
+            <MenuItem to="/admin/seat-status-monitor">Trạng thái ghế (Real-time)</MenuItem>
+          </>
+        ) : null}
       </nav>
 
       {/* User Info & Logout */}

@@ -12,6 +12,8 @@ export async function getUsers() {
         email: user.email,
         phone: user.phone || '',
         status: user.status,
+        bus_company_id: user.busCompanyId || null,
+        roles: user.roles || [],
         created_at: user.createdAt ? new Date(user.createdAt).toLocaleDateString('vi-VN') : '',
         updated_at: user.updatedAt ? new Date(user.updatedAt).toLocaleDateString('vi-VN') : '',
       }));
@@ -60,6 +62,38 @@ export async function unblockUser(userId) {
     return response;
   } catch (error) {
     console.error('Error unblocking user:', error);
+    throw error;
+  }
+}
+
+export async function createAdmin(userData) {
+  try {
+    const response = await axiosClient.post('/admin/auth/create-admin', userData);
+    return response;
+  } catch (error) {
+    console.error('Error creating admin:', error);
+    throw error;
+  }
+}
+
+export async function createStaff(userData) {
+  try {
+    const response = await axiosClient.post('/admin/auth/create-staff', userData);
+    return response;
+  } catch (error) {
+    console.error('Error creating staff:', error);
+    throw error;
+  }
+}
+
+export async function updateUserBusCompany(userId, busCompanyId) {
+  try {
+    const response = await axiosClient.put(`/admin/auth/users/${userId}/bus-company`, {
+      busCompanyId: busCompanyId || null
+    });
+    return response;
+  } catch (error) {
+    console.error('Error updating user bus company:', error);
     throw error;
   }
 }

@@ -5,6 +5,7 @@ export class UserProfileDto {
   email: string;
   phone?: string;
   status: string;
+  busCompanyId?: number;
   roles: string[];
   createdAt: Date;
   updatedAt: Date;

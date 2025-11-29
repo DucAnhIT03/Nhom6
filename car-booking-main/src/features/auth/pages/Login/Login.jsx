@@ -60,7 +60,7 @@ function Login() {
           <div className="auth-logo">
             <span className="logo-icon">🚌</span>
           </div>
-          <h1 className="auth-title">Chào mừng trở lại!</h1>
+          <h1 className="auth-title">Chào mừng bạn đã đến với hệ thống đặt vé xe</h1>
           <p className="auth-subtitle">Đăng nhập để tiếp tục trải nghiệm</p>
         </div>
 

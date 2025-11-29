@@ -35,3 +35,20 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+.bus-card-address {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 0.9rem;
+  color: #555;
+  line-height: 1.5;
+}
+
+.address-icon {
+  flex-shrink: 0;
+  color: #e31e24;
+  font-size: 1.1rem;
+  margin-top: 2px;
+}

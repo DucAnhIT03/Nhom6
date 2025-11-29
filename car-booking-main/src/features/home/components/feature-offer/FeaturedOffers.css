@@ -13,6 +13,22 @@
 
 .offer-content img {
   width: 100%;
+  border-radius: 12px;
+}
+
+.featured-offer-image {
+  animation: featuredFade 700ms ease-in-out;
+}
+
+@keyframes featuredFade {
+  0% {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .control-btn {

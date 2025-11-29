@@ -16,6 +16,7 @@ export async function getCompanies(params = {}) {
           id: company.id,
           company_name: company.companyName,
           image: company.image || '',
+          address: company.address || '',
           descriptions: company.descriptions || '',
           created_at: company.createdAt ? new Date(company.createdAt).toLocaleDateString('vi-VN') : '',
           updated_at: company.updatedAt ? new Date(company.updatedAt).toLocaleDateString('vi-VN') : '',
@@ -27,6 +28,7 @@ export async function getCompanies(params = {}) {
           id: company.id,
           company_name: company.companyName || company.company_name,
           image: company.image || '',
+          address: company.address || '',
           descriptions: company.descriptions || '',
           created_at: company.createdAt ? new Date(company.createdAt).toLocaleDateString('vi-VN') : '',
           updated_at: company.updatedAt ? new Date(company.updatedAt).toLocaleDateString('vi-VN') : '',
@@ -51,6 +53,7 @@ export async function addCompany(companyData) {
     const payload = {
       companyName: companyData.company_name,
       image: companyData.image || undefined,
+      address: companyData.address || undefined,
       descriptions: companyData.descriptions || undefined,
     };
     
@@ -83,6 +86,9 @@ export async function updateCompany(updatedCompany) {
     }
     if (updatedCompany.image !== undefined) {
       updateData.image = updatedCompany.image;
+    }
+    if (updatedCompany.address !== undefined) {
+      updateData.address = updatedCompany.address;
     }
     if (updatedCompany.descriptions !== undefined) {
       updateData.descriptions = updatedCompany.descriptions;

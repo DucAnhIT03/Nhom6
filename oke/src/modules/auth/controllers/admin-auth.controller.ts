@@ -126,5 +126,31 @@ export class AdminAuthController {
     const result = await this.authService.registerAdmin(registerDto);
     return ResponseUtil.success<AuthResponseDto>(result, 'Tạo tài khoản admin thành công');
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('create-user')
+  async createUser(@Body() registerDto: RegisterDto) {
+    // Admin can create regular users without OTP verification
+    const result = await this.authService.createUserByAdmin(registerDto);
+    return ResponseUtil.success<UserProfileDto>(result, 'Tạo tài khoản người dùng thành công');
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('create-staff')
+  async createStaff(@Body() registerDto: RegisterDto) {
+    // Admin can create staff users without OTP verification
+    const result = await this.authService.createStaffByAdmin(registerDto);
+    return ResponseUtil.success<UserProfileDto>(result, 'Tạo tài khoản nhân viên thành công');
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Put('users/:id/bus-company')
+  async updateUserBusCompany(
+    @Param('id') userId: number,
+    @Body() body: { busCompanyId?: number | null },
+  ) {
+    const result = await this.authService.updateUserBusCompany(userId, body.busCompanyId || undefined);
+    return ResponseUtil.success<UserProfileDto>(result, 'Cập nhật nhà xe cho nhân viên thành công');
+  }
 }
 

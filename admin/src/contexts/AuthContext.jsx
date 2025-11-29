@@ -94,11 +94,31 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const refreshProfile = async () => {
+    try {
+      const response = await authService.getProfile();
+      
+      if (response && response.success && response.data) {
+        const updatedUser = response.data;
+        localStorage.setItem('admin_user', JSON.stringify(updatedUser));
+        setUser(updatedUser);
+        return updatedUser;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Refresh profile error:', error);
+      // Don't throw error, just return null
+      return null;
+    }
+  };
+
   const value = {
     user,
     login,
     logout,
     updateProfile,
+    refreshProfile,
     loading,
     isAuthenticated: !!user,
   };

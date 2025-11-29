@@ -53,8 +53,9 @@ const SeatSelectionModal = ({ isOpen, schedule, onClose }) => {
           setSeatTypePriceMap(map);
         }
 
-        // 2. Lấy sơ đồ ghế của xe
-        const data = await getSeatsByBus(schedule.busId);
+        // 2. Lấy sơ đồ ghế của xe (có scheduleId để check ghế đã đặt)
+        const scheduleId = schedule.id || schedule.scheduleId;
+        const data = await getSeatsByBus(schedule.busId, scheduleId);
         if (!isMounted) return;
         console.log('Seat data from API:', {
           busId: schedule.busId,

@@ -33,8 +33,12 @@ export class SeatController {
   // Công khai: Xem sơ đồ ghế theo xe
   @Get('bus/:busId')
   @Public()
-  async findByBusId(@Param('busId', ParseIntPipe) busId: number) {
-    return this.seatService.findByBusId(busId);
+  async findByBusId(
+    @Param('busId', ParseIntPipe) busId: number,
+    @Query('scheduleId') scheduleId?: string,
+  ) {
+    const scheduleIdNum = scheduleId ? parseInt(scheduleId, 10) : undefined;
+    return this.seatService.findByBusId(busId, scheduleIdNum);
   }
 
   // Công khai: Xem chi tiết ghế

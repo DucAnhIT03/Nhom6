@@ -60,13 +60,14 @@ export async function getSeatMap(busId) {
         busName: response.data.busName,
         seats: response.data.seats || [],
         seatMap: response.data.seatMap || {},
+        layoutConfig: response.data.layoutConfig || null,
       };
     }
 
-    return { busId, busName: '', seats: [], seatMap: {} };
+    return { busId, busName: '', seats: [], seatMap: {}, layoutConfig: null };
   } catch (error) {
     console.error('Error fetching seat map:', error);
-    return { busId, busName: '', seats: [], seatMap: {} };
+    return { busId, busName: '', seats: [], seatMap: {}, layoutConfig: null };
   }
 }
 

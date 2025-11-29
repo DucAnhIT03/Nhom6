@@ -12,8 +12,8 @@ import { getCompanies } from '../../services/busCompanyService'
 
 const DEFAULT_SEAT_MAP = { busId: null, busName: '', seats: [], seatMap: {} }
 const DEFAULT_FLOOR_CONFIGS = [
-  { floor: 1, rows: 4, columns: 4, prefix: 'A' },
-  { floor: 2, rows: 4, columns: 4, prefix: 'B' }
+  { floor: 1, rows: 4, columns: 4 },
+  { floor: 2, rows: 4, columns: 4 }
 ]
 const LAYOUT_STORAGE_KEY = 'seat_layout_configs'
 
@@ -253,7 +253,7 @@ useEffect(() => {
         index === floorIndex
           ? {
               ...config,
-              [field]: field === 'prefix' ? value.toUpperCase() : value
+              [field]: value
             }
           : config
       )
@@ -296,9 +296,6 @@ useEffect(() => {
       if ((Number(config.rows) || 0) <= 0 || (Number(config.columns) || 0) <= 0) {
         return alert(`Số hàng và số cột của tầng ${i + 1} phải lớn hơn 0`)
       }
-      if (!config.prefix || !config.prefix.trim()) {
-        return alert(`Vui lòng nhập tiền tố cho tầng ${i + 1}`)
-      }
     }
     const selectedBuilderBus = buses.find(b => b.id === Number(builderForm.busId))
     if (selectedBuilderBus?.capacity && builderSeatCount > selectedBuilderBus.capacity) {
@@ -309,16 +306,17 @@ useEffect(() => {
     const seatsPayload = []
     const pad = (num) => String(num).padStart(2, '0')
 
-    const buildFloorSeats = (floorConfig) => {
+    const buildFloorSeats = (floorConfig, floorIndex) => {
       const rows = Number(floorConfig.rows)
       const columns = Number(floorConfig.columns)
-      const cleanPrefix = floorConfig.prefix.trim().toUpperCase()
+      // Tự động sinh tiền tố: A cho tầng 1, B cho tầng 2
+      const prefix = String.fromCharCode(65 + floorIndex) // 65 = 'A', 66 = 'B'
       for (let row = 1; row <= rows; row++) {
         for (let col = 1; col <= columns; col++) {
           const order = (row - 1) * columns + col
           seatsPayload.push({
             bus_id: builderForm.busId,
-            seat_number: `${cleanPrefix}${pad(order)}`,
+            seat_number: `${prefix}${pad(order)}`,
             seat_type: builderForm.seat_type,
             price_for_seat_type: builderForm.price_for_seat_type
           })
@@ -326,7 +324,7 @@ useEffect(() => {
       }
     }
 
-    activeFloorConfigs.slice(0, floors).forEach(buildFloorSeats)
+    activeFloorConfigs.slice(0, floors).forEach((config, index) => buildFloorSeats(config, index))
 
     if (!seatsPayload.length) {
       return alert('Không có ghế nào được tạo. Vui lòng kiểm tra lại cấu hình.')
@@ -348,17 +346,21 @@ useEffect(() => {
       const storedLayout = {
         busId: Number(builderForm.busId),
         floors,
-        floorConfigs: activeFloorConfigs.slice(0, floors).map((config, index) => ({
-          floor: config.floor || index + 1,
-          prefix: (config.prefix || '').trim().toUpperCase(),
-          rows: Number(config.rows) || 1,
-          columns: Number(config.columns) || 1,
-          label: config.floor === 1
-            ? 'Tầng dưới'
-            : config.floor === 2
-              ? 'Tầng trên'
-              : `Tầng ${config.floor || index + 1}`
-        }))
+        floorConfigs: activeFloorConfigs.slice(0, floors).map((config, index) => {
+          // Tự động sinh tiền tố: A cho tầng 1, B cho tầng 2
+          const prefix = String.fromCharCode(65 + index) // 65 = 'A', 66 = 'B'
+          return {
+            floor: config.floor || index + 1,
+            prefix: prefix,
+            rows: Number(config.rows) || 1,
+            columns: Number(config.columns) || 1,
+            label: index === 0
+              ? 'Tầng dưới'
+              : index === 1
+                ? 'Tầng trên'
+                : `Tầng ${index + 1}`
+          }
+        })
       }
       // Lưu vào localStorage (để admin dùng)
       saveSeatLayoutConfig(storedLayout.busId, storedLayout)
@@ -931,34 +933,31 @@ useEffect(() => {
               ]}
             />
           </div>
-          {activeFloorConfigs.map((config, idx) => (
-            <div key={config.floor} className="border border-dashed border-gray-300 rounded-lg p-4 space-y-3">
-              <p className="text-sm font-semibold text-gray-700">Cấu hình tầng {idx + 1}</p>
-              <div className="grid gap-4 md:grid-cols-3">
-                <FormInput
-                  type="number"
-                  label="Số hàng"
-                  min="1"
-                  value={config.rows}
-                  onChange={(e) => handleFloorConfigChange(idx, 'rows', Math.max(1, Number(e.target.value) || 1))}
-                />
-                <FormInput
-                  type="number"
-                  label="Số cột"
-                  min="1"
-                  value={config.columns}
-                  onChange={(e) => handleFloorConfigChange(idx, 'columns', Math.max(1, Number(e.target.value) || 1))}
-                />
-                <FormInput
-                  type="text"
-                  label="Tiền tố"
-                  value={config.prefix}
-                  onChange={(e) => handleFloorConfigChange(idx, 'prefix', e.target.value)}
-                  placeholder={idx === 0 ? 'A' : 'B'}
-                />
+          {activeFloorConfigs.map((config, idx) => {
+            // Tự động sinh tiền tố: A cho tầng 1, B cho tầng 2
+            const autoPrefix = String.fromCharCode(65 + idx) // 65 = 'A', 66 = 'B'
+            return (
+              <div key={config.floor || idx} className="border border-dashed border-gray-300 rounded-lg p-4 space-y-3">
+                <p className="text-sm font-semibold text-gray-700">Cấu hình tầng {idx + 1} (Tiền tố: {autoPrefix})</p>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <FormInput
+                    type="number"
+                    label="Số hàng"
+                    min="1"
+                    value={config.rows}
+                    onChange={(e) => handleFloorConfigChange(idx, 'rows', Math.max(1, Number(e.target.value) || 1))}
+                  />
+                  <FormInput
+                    type="number"
+                    label="Số cột"
+                    min="1"
+                    value={config.columns}
+                    onChange={(e) => handleFloorConfigChange(idx, 'columns', Math.max(1, Number(e.target.value) || 1))}
+                  />
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
           <FormInput
             type="number"
             label="Giá mặc định (VNĐ)"

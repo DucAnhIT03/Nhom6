@@ -112,6 +112,7 @@
 .payment-option {
   display: flex;
   align-items: center;
+  gap: 16px;
   padding: 12px 14px;
   border-radius: 10px;
   border: 1px solid #e5e7eb;
@@ -125,9 +126,27 @@
   box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.25);
 }
 
+.payment-logo {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  padding: 8px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.payment-logo svg {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
 .payment-info {
   display: flex;
   flex-direction: column;
+  flex: 1;
 }
 
 .payment-name {
@@ -177,6 +196,16 @@
 
 .payment-submit-btn:hover {
   filter: brightness(1.05);
+}
+
+.payment-btn-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.payment-btn-content svg {
+  flex-shrink: 0;
 }
 
 .payment-back-btn {

@@ -1,4 +1,4 @@
-import { IsString, IsEmail, IsNotEmpty, MinLength, IsOptional, Matches } from 'class-validator';
+import { IsString, IsEmail, IsNotEmpty, MinLength, IsOptional, Matches, ValidateIf } from 'class-validator';
 
 export class RegisterDto {
   @IsString()
@@ -18,9 +18,13 @@ export class RegisterDto {
   @IsNotEmpty({ message: 'Mật khẩu không được để trống' })
   password: string;
 
-  @IsString()
   @IsOptional()
+  @ValidateIf((o) => o.phone !== undefined && o.phone !== null && o.phone !== '')
+  @IsString()
   @Matches(/^[0-9]{10,11}$/, { message: 'Số điện thoại không hợp lệ' })
   phone?: string;
+
+  @IsOptional()
+  busCompanyId?: number;
 }
 

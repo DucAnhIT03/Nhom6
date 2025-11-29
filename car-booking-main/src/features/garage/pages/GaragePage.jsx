@@ -69,9 +69,10 @@ export default function GaragePage() {
               {currentData.map((company) => (
                 <BusCard 
                   key={company.id} 
+                  companyId={company.id}
                   bus={{
                     name: company.name || company.company_name,
-                    description: company.descriptions || company.address || '',
+                    description: company.address || company.descriptions || '',
                     image: company.image || '/bus-garage.png',
                   }} 
                 />

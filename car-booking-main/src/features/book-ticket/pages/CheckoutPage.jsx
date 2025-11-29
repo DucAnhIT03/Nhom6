@@ -158,6 +158,22 @@ const CheckoutPage = () => {
           <h2>Phương thức thanh toán</h2>
           <div className="checkout-card">
             <div className="payment-option active">
+              <div className="payment-logo">
+                <svg width="140" height="50" viewBox="0 0 200 70" xmlns="http://www.w3.org/2000/svg">
+                  {/* Red rectangle background */}
+                  <rect x="5" y="10" width="50" height="50" rx="8" fill="#E31E24" transform="rotate(-5 30 35)"/>
+                  {/* Blue rectangle with circle pattern */}
+                  <rect x="0" y="5" width="50" height="50" rx="8" fill="#0066CC" transform="rotate(5 25 30)"/>
+                  <circle cx="25" cy="30" r="12" fill="none" stroke="#FFFFFF" strokeWidth="2" opacity="0.8"/>
+                  <circle cx="25" cy="30" r="8" fill="none" stroke="#FFFFFF" strokeWidth="1.5" opacity="0.6"/>
+                  <circle cx="25" cy="30" r="4" fill="#FFFFFF" opacity="0.7"/>
+                  {/* VNPAY text */}
+                  <text x="70" y="35" fontFamily="Arial, sans-serif" fontSize="28" fontWeight="bold" fill="#E31E24" letterSpacing="2">VN</text>
+                  <text x="120" y="35" fontFamily="Arial, sans-serif" fontSize="28" fontWeight="bold" fill="#0066CC" letterSpacing="2">PAY</text>
+                  {/* Slogan */}
+                  <text x="100" y="52" fontFamily="Arial, sans-serif" fontSize="10" fill="#9CA3AF" textAnchor="middle">Cho cuộc sống đơn giản hơn</text>
+                </svg>
+              </div>
               <div className="payment-info">
                 <span className="payment-name">VNPAY</span>
                 <span className="payment-desc">
@@ -186,7 +202,21 @@ const CheckoutPage = () => {
               onClick={handlePayWithVnpay}
               className="payment-submit-btn"
             >
-              Thanh toán VNPAY
+              <span className="payment-btn-content">
+                <svg width="70" height="25" viewBox="0 0 200 70" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: '10px' }}>
+                  {/* Red rectangle background */}
+                  <rect x="5" y="10" width="50" height="50" rx="8" fill="#FFFFFF" opacity="0.3" transform="rotate(-5 30 35)"/>
+                  {/* Blue rectangle with circle pattern */}
+                  <rect x="0" y="5" width="50" height="50" rx="8" fill="#FFFFFF" opacity="0.3" transform="rotate(5 25 30)"/>
+                  <circle cx="25" cy="30" r="12" fill="none" stroke="#FFFFFF" strokeWidth="2" opacity="0.4"/>
+                  <circle cx="25" cy="30" r="8" fill="none" stroke="#FFFFFF" strokeWidth="1.5" opacity="0.3"/>
+                  <circle cx="25" cy="30" r="4" fill="#FFFFFF" opacity="0.5"/>
+                  {/* VNPAY text */}
+                  <text x="70" y="35" fontFamily="Arial, sans-serif" fontSize="20" fontWeight="bold" fill="#FFFFFF" letterSpacing="1.5">VN</text>
+                  <text x="120" y="35" fontFamily="Arial, sans-serif" fontSize="20" fontWeight="bold" fill="#FFFFFF" letterSpacing="1.5">PAY</text>
+                </svg>
+                Thanh toán VNPAY
+              </span>
             </button>
             <button
               type="button"

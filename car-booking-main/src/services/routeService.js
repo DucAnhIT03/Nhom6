@@ -61,4 +61,23 @@ export const getRoutes = async (params = {}) => {
   }
 };
 
+/**
+ * Lấy thông tin chi tiết một tuyến đường theo ID
+ * @param {number} id - ID của tuyến đường
+ * @returns {Promise<Object>} Thông tin tuyến đường
+ */
+export const getRouteById = async (id) => {
+  try {
+    const response = await axiosClient.get(`/routes/${id}`);
+    
+    if (response?.success && response?.data) {
+      return mapRoute(response.data);
+    }
+    
+    return response?.data || response;
+  } catch (error) {
+    console.error(`Error fetching route ${id}:`, error);
+    throw error;
+  }
+};
 

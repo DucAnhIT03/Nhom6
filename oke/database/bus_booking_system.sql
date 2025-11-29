@@ -14,6 +14,7 @@ CREATE TABLE users (
     password VARCHAR(255) NOT NULL,
     phone VARCHAR(11),
     status ENUM('ACTIVE', 'BLOCKED') DEFAULT 'ACTIVE',
+    bus_company_id INT NULL COMMENT 'Nhà xe được gán cho nhân viên',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at DATETIME NULL,
@@ -26,7 +27,7 @@ CREATE TABLE users (
 -- ============================================
 CREATE TABLE roles (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    role_name ENUM('ROLE_ADMIN', 'ROLE_USER') NOT NULL UNIQUE,
+    role_name ENUM('ROLE_ADMIN', 'ROLE_USER', 'ROLE_STAFF') NOT NULL UNIQUE,
     INDEX idx_role_name (role_name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -82,7 +83,8 @@ CREATE TABLE bus_companies (
     id INT AUTO_INCREMENT PRIMARY KEY,
     company_name VARCHAR(255) NOT NULL,
     image VARCHAR(255),
-    descriptions LONGTEXT,
+    address VARCHAR(500) COMMENT 'Địa chỉ trụ sở của nhà xe',
+    descriptions LONGTEXT COMMENT 'Mô tả về nhà xe',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at DATETIME NULL,
@@ -363,5 +365,53 @@ INSERT INTO user_role (user_id, role_id) VALUES
 (3, 2), -- User 2 có quyền USER
 (4, 2), -- User 3 có quyền USER
 (5, 2); -- User 4 có quyền USER
+
+-- ============================================
+-- TỐI ƯU HÓA DATABASE CHO REAL-TIME MONITORING
+-- ============================================
+-- Các index composite bổ sung để tối ưu hiệu suất query
+-- cho chức năng quản lý trạng thái ghế real-time
+-- ============================================
+
+-- ============================================
+-- INDEX COMPOSITE CHO TICKETS
+-- ============================================
+-- Index này giúp query tickets theo schedule_id và status nhanh hơn
+-- (đặc biệt hữu ích khi lọc các vé đã đặt cho một lịch trình cụ thể)
+CREATE INDEX idx_tickets_schedule_status ON tickets(schedule_id, status);
+
+-- Index này giúp query tickets theo schedule_id và seat_id nhanh hơn
+-- (để kiểm tra xem một ghế đã được đặt cho lịch trình này chưa)
+CREATE INDEX idx_tickets_schedule_seat ON tickets(schedule_id, seat_id);
+
+-- ============================================
+-- INDEX COMPOSITE CHO SEATS
+-- ============================================
+-- Index này giúp query seats theo bus_id và status nhanh hơn
+-- (để lấy danh sách ghế còn trống/đã đặt của một xe)
+CREATE INDEX idx_seats_bus_status ON seats(bus_id, status);
+
+-- ============================================
+-- INDEX COMPOSITE CHO SCHEDULES
+-- ============================================
+-- Index composite cho schedules để query nhanh hơn theo route và status
+CREATE INDEX idx_schedules_route_status ON schedules(route_id, status);
+
+-- Index composite cho schedules để query nhanh hơn theo bus và departure_time
+CREATE INDEX idx_schedules_bus_departure ON schedules(bus_id, departure_time);
+
+-- ============================================
+-- GHI CHÚ VỀ PERFORMANCE
+-- ============================================
+-- Các index trên sẽ giúp:
+-- 1. Query tickets theo schedule_id và status nhanh hơn (cho real-time monitoring)
+-- 2. Query seats theo bus_id và status nhanh hơn
+-- 3. Query schedules theo route và status nhanh hơn
+-- 
+-- Lưu ý: Các index này sẽ chiếm thêm dung lượng database,
+-- nhưng sẽ cải thiện đáng kể hiệu suất query, đặc biệt khi:
+-- - Có nhiều tickets trong hệ thống
+-- - Có nhiều seats trong một xe
+-- - Real-time monitoring cần query thường xuyên (mỗi 3 giây)
 
 

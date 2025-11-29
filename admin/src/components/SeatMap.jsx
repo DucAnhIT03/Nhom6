@@ -13,6 +13,7 @@ import React, { useMemo } from 'react';
  * @param {Function} props.onSeatSelect - Callback khi chọn/bỏ chọn ghế (optional) - nhận (seatId, isSelected)
  * @param {Boolean} props.multiSelect - Cho phép chọn nhiều ghế (optional)
  * @param {Object} props.layoutConfig - Cấu hình hàng/cột cho từng tầng
+ * @param {Boolean} props.showLegend - Hiển thị legend (mặc định: true)
  */
 export default function SeatMap({
   seatMap = {},
@@ -23,7 +24,19 @@ export default function SeatMap({
   onSeatSelect,
   multiSelect = false,
   layoutConfig = null,
+  showLegend = true,
 }) {
+  // Hàm chuyển đổi loại ghế sang tiếng Việt
+  const getSeatTypeLabel = (seatType) => {
+    const types = {
+      'STANDARD': 'Thường',
+      'VIP': 'VIP',
+      'DOUBLE': 'Đôi',
+      'LUXURY': 'Luxury'
+    };
+    return types[seatType] || seatType || 'Thường';
+  };
+
   // Màu sắc mặc định
   const getSeatColor = (seatType, status, isHidden = false, isSelected = false) => {
     if (isHidden) {
@@ -203,6 +216,7 @@ export default function SeatMap({
   return (
     <div className="w-full">
       {/* Legend */}
+      {showLegend && (
       <div className="mb-6 flex flex-wrap gap-4 justify-center p-4 bg-gray-50 rounded-lg">
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 rounded border border-gray-300" style={{ backgroundColor: '#9ca3af' }}></div>
@@ -230,6 +244,7 @@ export default function SeatMap({
           💡 Click vào ghế để chỉnh sửa (loại ghế, giá, ẩn/hiện ghế)
         </div>
       </div>
+      )}
 
       {/* Seat Map */}
       {Object.keys(floors).length === 0 ? (
@@ -292,7 +307,7 @@ export default function SeatMap({
                                   borderColor: isSelected ? '#a78bfa' : isBooked ? '#6b7280' : isHidden ? '#d1d5db' : '#e5e7eb',
                                   color: isBooked ? '#ffffff' : isHidden ? '#9ca3af' : '#1f2937',
                                 }}
-                                title={`${seatNumber} - ${seatType || 'Thường'} - ${isHidden ? 'Đã ẩn' : status === 'BOOKED' ? 'Đã bán' : 'Còn trống'}${multiSelect && !isBooked ? ' (Click để chọn)' : ' (Click để chỉnh sửa)'}`}
+                                title={`${seatNumber} - ${getSeatTypeLabel(seatType)} - ${isHidden ? 'Đã ẩn' : status === 'BOOKED' ? 'Đã bán' : 'Còn trống'}${multiSelect && !isBooked ? ' (Click để chọn)' : ' (Click để chỉnh sửa)'}`}
                               >
                                 {isHidden ? (
                                   <span className="text-red-600 font-bold text-lg">✕</span>

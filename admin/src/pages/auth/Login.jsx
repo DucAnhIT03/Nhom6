@@ -44,8 +44,19 @@ export default function Login() {
 
   return (
     <div className="login-container">
+      <div className="login-background">
+        <div className="login-shapes">
+          <div className="shape shape-1"></div>
+          <div className="shape shape-2"></div>
+          <div className="shape shape-3"></div>
+        </div>
+      </div>
       <div className="login-card">
         <div className="login-header">
+          <div className="login-logo">
+            <span className="logo-icon">🚌</span>
+          </div>
+          <h2 className="login-welcome">Chào mừng bạn đã đến với hệ thống đặt vé xe</h2>
           <h1 className="login-title">Đăng nhập Admin</h1>
           <p className="login-subtitle">Vui lòng đăng nhập để tiếp tục</p>
         </div>
@@ -53,7 +64,8 @@ export default function Login() {
         <form onSubmit={handleSubmit} className="login-form">
           {error && (
             <div className="error-message">
-              {error}
+              <span>⚠️</span>
+              <span>{error}</span>
             </div>
           )}
 

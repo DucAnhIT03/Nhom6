@@ -38,6 +38,9 @@ export class User {
   })
   status: 'ACTIVE' | 'BLOCKED';
 
+  @Column({ name: 'bus_company_id', nullable: true })
+  busCompanyId?: number;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

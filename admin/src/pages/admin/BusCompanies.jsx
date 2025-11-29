@@ -13,7 +13,7 @@ export default function BusCompanies(){
   const [editing, setEditing] = useState(null)
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
-  const [form, setForm] = useState({ company_name:'', image:'', descriptions:'' })
+  const [form, setForm] = useState({ company_name:'', image:'', address:'', descriptions:'' })
   const [imagePreview, setImagePreview] = useState('')
   const [imageFile, setImageFile] = useState(null)
 
@@ -33,7 +33,7 @@ export default function BusCompanies(){
 
   const openAdd = ()=>{ 
     setEditing(null)
-    setForm({ company_name:'', image:'', descriptions:'' })
+    setForm({ company_name:'', image:'', address:'', descriptions:'' })
     setImagePreview('')
     setImageFile(null)
     setOpen(true) 
@@ -44,6 +44,7 @@ export default function BusCompanies(){
     setForm({ 
       company_name: row.company_name || '',
       image: row.image || '',
+      address: row.address || '',
       descriptions: row.descriptions || ''
     })
     setImagePreview(row.image || '')
@@ -112,6 +113,7 @@ export default function BusCompanies(){
             id: editing.id,
             company_name: response.data.companyName || companyData.company_name,
             image: response.data.image || imageUrl,
+            address: response.data.address || companyData.address,
             descriptions: response.data.descriptions || companyData.descriptions,
             created_at: response.data.createdAt ? new Date(response.data.createdAt).toLocaleDateString('vi-VN') : editing.created_at,
             updated_at: response.data.updatedAt ? new Date(response.data.updatedAt).toLocaleDateString('vi-VN') : new Date().toLocaleDateString('vi-VN'),
@@ -127,6 +129,7 @@ export default function BusCompanies(){
             id: response.data.id,
             company_name: response.data.companyName || companyData.company_name,
             image: response.data.image || imageUrl,
+            address: response.data.address || companyData.address,
             descriptions: response.data.descriptions || companyData.descriptions,
             created_at: response.data.createdAt ? new Date(response.data.createdAt).toLocaleDateString('vi-VN') : new Date().toLocaleDateString('vi-VN'),
             updated_at: response.data.updatedAt ? new Date(response.data.updatedAt).toLocaleDateString('vi-VN') : new Date().toLocaleDateString('vi-VN'),
@@ -177,7 +180,8 @@ export default function BusCompanies(){
       )
     },
     { key:'company_name', title:'Tên nhà xe', dataIndex:'company_name' },
-    { key:'descriptions', title:'Địa chỉ trụ sở', dataIndex:'descriptions' },
+    { key:'address', title:'Địa chỉ trụ sở', dataIndex:'address' },
+    { key:'descriptions', title:'Mô tả', dataIndex:'descriptions', render: (text) => text ? (text.length > 50 ? text.substring(0, 50) + '...' : text) : '-' },
     { key:'created_at', title:'Ngày tạo', dataIndex:'created_at' },
   ]
 
@@ -235,9 +239,19 @@ export default function BusCompanies(){
           <FormInput label="Địa chỉ trụ sở">
             <input 
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all duration-200" 
+              value={form.address} 
+              onChange={e=>setForm({...form, address:e.target.value})} 
+              placeholder="Nhập địa chỉ trụ sở của nhà xe"
+            />
+          </FormInput>
+          
+          <FormInput label="Mô tả nhà xe">
+            <textarea 
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all duration-200 resize-none" 
+              rows={4}
               value={form.descriptions} 
               onChange={e=>setForm({...form, descriptions:e.target.value})} 
-              placeholder="Nhập địa chỉ trụ sở của nhà xe"
+              placeholder="Nhập mô tả về nhà xe"
             />
           </FormInput>
         </div>

@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { SeatRepository } from '../repositories/seat.repository';
+import { TicketRepository } from '../../ticket/repositories/ticket.repository';
 import { CreateSeatDto } from '../dtos/request/create-seat.dto';
 import { UpdateSeatDto } from '../dtos/request/update-seat.dto';
 import { QuerySeatDto } from '../dtos/request/query-seat.dto';
@@ -11,7 +12,10 @@ import { Seat } from '../../../shared/entities/seat.entity';
 
 @Injectable()
 export class SeatService {
-  constructor(private readonly seatRepository: SeatRepository) {}
+  constructor(
+    private readonly seatRepository: SeatRepository,
+    private readonly ticketRepository: TicketRepository,
+  ) {}
 
   // Màu sắc cho từng loại ghế
   private getSeatColor(seatType: string, status: string, isHidden: boolean = false): string {
@@ -53,21 +57,53 @@ export class SeatService {
     );
   }
 
-  async findByBusId(busId: number): Promise<any> {
+  async findByBusId(busId: number, scheduleId?: number): Promise<any> {
     const seats = await this.seatRepository.findByBusId(busId);
+    
+    // Nếu có scheduleId, lấy danh sách ghế đã đặt cho schedule này
+    let bookedSeatIds: number[] = [];
+    if (scheduleId) {
+      try {
+        const tickets = await this.ticketRepository.findAll({
+          scheduleId,
+          page: 1,
+          limit: 1000,
+        });
+        // Lấy danh sách seatId đã đặt (chỉ vé chưa hủy)
+        bookedSeatIds = tickets.data
+          .filter(ticket => ticket.status !== 'CANCELLED')
+          .map(ticket => ticket.seatId);
+      } catch (error) {
+        console.warn('Error fetching tickets for seat status:', error);
+        // Tiếp tục với bookedSeatIds rỗng nếu có lỗi
+      }
+    }
     
     const seatMap: SeatMapResponseDto = {
       busId,
       busName: seats[0]?.bus?.name,
-      seats: seats.map((seat) => this.mapToResponseDto(seat)),
+      seats: seats.map((seat) => {
+        // Cập nhật status nếu ghế đã được đặt trong schedule này
+        const isBooked = bookedSeatIds.includes(seat.id);
+        const seatDto = this.mapToResponseDto(seat);
+        if (isBooked) {
+          seatDto.status = 'BOOKED';
+        }
+        return seatDto;
+      }),
       seatMap: {},
     };
 
     // Tạo map với màu sắc
     seats.forEach((seat) => {
+      const isBooked = bookedSeatIds.includes(seat.id);
+      const finalStatus = isBooked ? 'BOOKED' : seat.status;
       seatMap.seatMap[seat.seatNumber] = {
-        seat: this.mapToResponseDto(seat),
-        color: this.getSeatColor(seat.seatType, seat.status, seat.isHidden || false),
+        seat: {
+          ...this.mapToResponseDto(seat),
+          status: finalStatus,
+        },
+        color: this.getSeatColor(seat.seatType, finalStatus, seat.isHidden || false),
       };
     });
 

@@ -73,6 +73,15 @@ export class TicketController {
     return this.ticketService.create(createDto);
   }
 
+  // Admin hoặc Staff: Xuất vé tại quầy (cho phép chỉ định userId)
+  @Post('admin/counter')
+  @UseGuards(JwtAuthGuard)
+  @Roles(RoleName.ROLE_ADMIN, RoleName.ROLE_STAFF)
+  async createAtCounter(@Body() createDto: CreateTicketDto) {
+    // Admin hoặc Staff có thể chỉ định userId bất kỳ
+    return this.ticketService.create(createDto);
+  }
+
   // Admin: Cập nhật vé
   @Put(':id')
   @UseGuards(JwtAuthGuard)

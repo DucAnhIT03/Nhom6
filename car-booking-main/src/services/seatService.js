@@ -17,10 +17,11 @@ const mapSeat = (seat) => ({
   } : null,
 });
 
-export const getSeatsByBus = async (busId) => {
+export const getSeatsByBus = async (busId, scheduleId = null) => {
   if (!busId) return { seats: [], seatMap: {}, busName: '', busFloors: 1 };
   try {
-    const response = await axiosClient.get(`/seats/bus/${busId}`);
+    const params = scheduleId ? { scheduleId } : {};
+    const response = await axiosClient.get(`/seats/bus/${busId}`, { params });
     if (response?.success && response?.data) {
       const seats = Array.isArray(response.data.seats)
         ? response.data.seats.map(mapSeat)

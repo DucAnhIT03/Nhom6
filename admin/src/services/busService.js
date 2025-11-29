@@ -21,6 +21,7 @@ export async function getBuses(params = {}) {
           floors: bus.floors || 2,
           company_id: bus.companyId,
           company: bus.company?.companyName || '',
+          seatLayoutConfig: bus.seatLayoutConfig || null,
           created_at: bus.createdAt ? new Date(bus.createdAt).toLocaleDateString('vi-VN') : '',
           updated_at: bus.updatedAt ? new Date(bus.updatedAt).toLocaleDateString('vi-VN') : '',
         }));
@@ -36,6 +37,7 @@ export async function getBuses(params = {}) {
           floors: bus.floors || 2,
           company_id: bus.companyId || bus.company_id,
           company: bus.company?.companyName || bus.company || '',
+          seatLayoutConfig: bus.seatLayoutConfig || null,
           created_at: bus.createdAt ? new Date(bus.createdAt).toLocaleDateString('vi-VN') : '',
           updated_at: bus.updatedAt ? new Date(bus.updatedAt).toLocaleDateString('vi-VN') : '',
         }));

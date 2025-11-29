@@ -23,6 +23,16 @@ export class AuthRepository {
       .getOne();
   }
 
+  async findUserByPhone(phone: string): Promise<User | null> {
+    if (!phone) return null;
+    return await this.userRepository
+      .createQueryBuilder('user')
+      .leftJoinAndSelect('user.roles', 'roles')
+      .where('user.phone = :phone', { phone })
+      .andWhere('user.deletedAt IS NULL')
+      .getOne();
+  }
+
   async findUserById(id: number): Promise<User | null> {
     return await this.userRepository
       .createQueryBuilder('user')
@@ -32,7 +42,7 @@ export class AuthRepository {
       .getOne();
   }
 
-  async createUser(registerDto: RegisterDto, hashedPassword: string): Promise<User> {
+  async createUser(registerDto: RegisterDto, hashedPassword: string, busCompanyId?: number): Promise<User> {
     const user = this.userRepository.create({
       firstName: registerDto.firstName,
       lastName: registerDto.lastName,
@@ -40,6 +50,7 @@ export class AuthRepository {
       password: hashedPassword,
       phone: registerDto.phone,
       status: 'ACTIVE',
+      busCompanyId: busCompanyId,
     });
 
     return await this.userRepository.save(user);
@@ -145,6 +156,10 @@ export class AuthRepository {
       .where('user.id = :id', { id })
       .andWhere('user.deletedAt IS NULL')
       .getOne();
+  }
+
+  async updateUserBusCompany(userId: number, busCompanyId?: number): Promise<void> {
+    await this.userRepository.update(userId, { busCompanyId: busCompanyId || undefined });
   }
 }
 

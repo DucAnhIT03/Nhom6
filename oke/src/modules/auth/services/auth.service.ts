@@ -134,6 +134,7 @@ export class AuthService {
       email: user.email,
       phone: user.phone,
       status: user.status,
+      busCompanyId: user.busCompanyId,
       roles: roleNames,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
@@ -187,6 +188,98 @@ export class AuthService {
     };
   }
 
+  async createUserByAdmin(registerDto: RegisterDto): Promise<UserProfileDto> {
+    // Check if user already exists by email or phone
+    const existingUserByEmail = await this.authRepository.findUserByEmail(registerDto.email);
+    if (existingUserByEmail) {
+      throw new ConflictException('Email đã được sử dụng');
+    }
+
+    if (registerDto.phone) {
+      const existingUserByPhone = await this.authRepository.findUserByPhone(registerDto.phone);
+      if (existingUserByPhone) {
+        throw new ConflictException('Số điện thoại đã được sử dụng');
+      }
+    }
+
+    // Hash password (generate random password if not provided)
+    const saltRounds = 10;
+    const password = registerDto.password || `Temp@${Date.now()}`;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    // Create user
+    const user = await this.authRepository.createUser(registerDto, hashedPassword);
+
+    // Assign USER role
+    const userRole = await this.authRepository.findRoleByName('ROLE_USER');
+    if (userRole) {
+      await this.authRepository.assignRoleToUser(user.id, userRole.id);
+    }
+
+    // Get user roles
+    const roles = await this.authRepository.getUserRoles(user.id);
+    const roleNames = roles.map((role) => role.roleName);
+
+    return {
+      id: user.id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      phone: user.phone,
+      status: user.status,
+      roles: roleNames,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
+  }
+
+  async createStaffByAdmin(registerDto: RegisterDto): Promise<UserProfileDto> {
+    // Check if user already exists
+    const existingUser = await this.authRepository.findUserByEmail(registerDto.email);
+    if (existingUser) {
+      throw new BadRequestException('Email đã được sử dụng');
+    }
+
+    // Check phone if provided
+    if (registerDto.phone) {
+      const existingUserByPhone = await this.authRepository.findUserByPhone(registerDto.phone);
+      if (existingUserByPhone) {
+        throw new BadRequestException('Số điện thoại đã được sử dụng');
+      }
+    }
+
+    // Hash password
+    const saltRounds = 10;
+    const password = registerDto.password || `Temp@${Date.now()}`;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    // Create user with bus_company_id if provided
+    const user = await this.authRepository.createUser(registerDto, hashedPassword, registerDto.busCompanyId);
+
+    // Assign STAFF role
+    const staffRole = await this.authRepository.findRoleByName('ROLE_STAFF');
+    if (staffRole) {
+      await this.authRepository.assignRoleToUser(user.id, staffRole.id);
+    }
+
+    // Get user roles
+    const roles = await this.authRepository.getUserRoles(user.id);
+    const roleNames = roles.map((role) => role.roleName);
+
+    return {
+      id: user.id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      phone: user.phone,
+      status: user.status,
+      busCompanyId: user.busCompanyId,
+      roles: roleNames,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
+  }
+
   async loginAdmin(loginDto: LoginDto): Promise<AuthResponseDto> {
     // Find user by email
     const user = await this.authRepository.findUserByEmail(loginDto.email);
@@ -203,8 +296,8 @@ export class AuthService {
     const roles = await this.authRepository.getUserRoles(user.id);
     const roleNames = roles.map((role) => role.roleName);
 
-    // Check if user has ADMIN role
-    if (!roleNames.includes('ROLE_ADMIN')) {
+    // Check if user has ADMIN or STAFF role
+    if (!roleNames.includes('ROLE_ADMIN') && !roleNames.includes('ROLE_STAFF')) {
       throw new UnauthorizedException('Bạn không có quyền truy cập admin');
     }
 
@@ -232,6 +325,7 @@ export class AuthService {
         email: user.email,
         phone: user.phone,
         status: user.status,
+        busCompanyId: user.busCompanyId,
         roles: roleNames,
       },
     };
@@ -334,6 +428,7 @@ export class AuthService {
         email: user.email,
         phone: user.phone,
         status: user.status,
+        busCompanyId: user.busCompanyId,
         roles: roleNames,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
@@ -367,6 +462,38 @@ export class AuthService {
       email: updatedUser.email,
       phone: updatedUser.phone,
       status: updateStatusDto.status, // Use the status from DTO instead of querying again
+      roles: roleNames,
+      createdAt: updatedUser.createdAt,
+      updatedAt: updatedUser.updatedAt,
+    };
+  }
+
+  async updateUserBusCompany(userId: number, busCompanyId?: number): Promise<UserProfileDto> {
+    const user = await this.authRepository.findUserById(userId);
+    if (!user) {
+      throw new NotFoundException('Không tìm thấy người dùng');
+    }
+
+    // Update bus_company_id
+    await this.authRepository.updateUserBusCompany(userId, busCompanyId);
+
+    // Get updated user with roles
+    const updatedUser = await this.authRepository.findUserByIdWithRoles(userId);
+    if (!updatedUser) {
+      throw new NotFoundException('Không tìm thấy người dùng sau khi cập nhật');
+    }
+
+    const roles = updatedUser.roles || [];
+    const roleNames = roles.map((role) => role.roleName);
+
+    return {
+      id: updatedUser.id,
+      firstName: updatedUser.firstName,
+      lastName: updatedUser.lastName,
+      email: updatedUser.email,
+      phone: updatedUser.phone,
+      status: updatedUser.status,
+      busCompanyId: updatedUser.busCompanyId,
       roles: roleNames,
       createdAt: updatedUser.createdAt,
       updatedAt: updatedUser.updatedAt,

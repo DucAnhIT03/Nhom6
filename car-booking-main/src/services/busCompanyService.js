@@ -19,7 +19,7 @@ export const getBusCompanies = async (params = {}) => {
           company_name: company.companyName,
           image: company.image || '',
           descriptions: company.descriptions || '',
-          address: company.descriptions || '', // Địa chỉ trụ sở
+          address: company.address || '', // Địa chỉ trụ sở
           createdAt: company.createdAt,
           updatedAt: company.updatedAt,
         }));
@@ -32,7 +32,7 @@ export const getBusCompanies = async (params = {}) => {
           company_name: company.companyName || company.company_name,
           image: company.image || '',
           descriptions: company.descriptions || '',
-          address: company.descriptions || '',
+          address: company.address || '',
           createdAt: company.createdAt,
           updatedAt: company.updatedAt,
         }));
@@ -47,7 +47,7 @@ export const getBusCompanies = async (params = {}) => {
         company_name: company.companyName || company.company_name,
         image: company.image || '',
         descriptions: company.descriptions || '',
-        address: company.descriptions || '',
+        address: company.address || '',
         createdAt: company.createdAt,
         updatedAt: company.updatedAt,
       }));
@@ -80,7 +80,7 @@ export const getBusCompanyById = async (id) => {
         company_name: company.companyName,
         image: company.image || '',
         descriptions: company.descriptions || '',
-        address: company.descriptions || '',
+        address: company.address || '',
         createdAt: company.createdAt,
         updatedAt: company.updatedAt,
       };

@@ -8,6 +8,7 @@ export enum UserStatus {
 export enum RoleName {
   ROLE_ADMIN = 'ROLE_ADMIN',
   ROLE_USER = 'ROLE_USER',
+  ROLE_STAFF = 'ROLE_STAFF',
 }
 
 export enum SeatType {

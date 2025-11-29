@@ -8,6 +8,7 @@ export class AuthResponseDto {
     email: string;
     phone?: string;
     status: string;
+    busCompanyId?: number;
     roles: string[];
   };
 }

@@ -15,10 +15,10 @@ export class Role {
   @Column({
     name: 'role_name',
     type: 'enum',
-    enum: ['ROLE_ADMIN', 'ROLE_USER'],
+    enum: ['ROLE_ADMIN', 'ROLE_USER', 'ROLE_STAFF'],
     unique: true,
   })
-  roleName: 'ROLE_ADMIN' | 'ROLE_USER';
+  roleName: 'ROLE_ADMIN' | 'ROLE_USER' | 'ROLE_STAFF';
 
   @ManyToMany('User', 'roles')
   users: any[];

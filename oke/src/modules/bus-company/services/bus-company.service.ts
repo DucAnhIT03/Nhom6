@@ -70,6 +70,7 @@ export class BusCompanyService {
       id: company.id,
       companyName: company.companyName,
       image: company.image,
+      address: company.address,
       descriptions: company.descriptions,
       createdAt: company.createdAt,
       updatedAt: company.updatedAt,

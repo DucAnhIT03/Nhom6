@@ -76,6 +76,10 @@ export class ScheduleRepository {
       });
     }
 
+    // Chỉ hiển thị những chuyến xe từ thời điểm hiện tại trở đi (không hiển thị chuyến trong quá khứ)
+    const now = new Date();
+    queryBuilder.andWhere('schedule.departureTime >= :now', { now });
+
     // Order by departure time
     queryBuilder.orderBy('schedule.departureTime', 'ASC');
 
@@ -189,18 +193,24 @@ export class ScheduleRepository {
     startDate.setHours(0, 0, 0, 0);
     const endDate = new Date(date);
     endDate.setHours(23, 59, 59, 999);
+    const now = new Date();
 
-    return await this.scheduleRepository.find({
-      where: {
-        routeId,
-        departureTime: Between(startDate, endDate),
-        status: ScheduleStatus.AVAILABLE as any, // Only available schedules
-      },
-      relations: ['route', 'route.departureStation', 'route.arrivalStation', 'bus', 'bus.company'],
-      order: {
-        departureTime: 'ASC',
-      },
-    });
+    // Sử dụng query builder để có thể filter theo thời gian hiện tại
+    const queryBuilder = this.scheduleRepository
+      .createQueryBuilder('schedule')
+      .leftJoinAndSelect('schedule.route', 'route')
+      .leftJoinAndSelect('route.departureStation', 'departureStation')
+      .leftJoinAndSelect('route.arrivalStation', 'arrivalStation')
+      .leftJoinAndSelect('schedule.bus', 'bus')
+      .leftJoinAndSelect('bus.company', 'company')
+      .where('schedule.routeId = :routeId', { routeId })
+      .andWhere('schedule.departureTime >= :startDate', { startDate })
+      .andWhere('schedule.departureTime <= :endDate', { endDate })
+      .andWhere('schedule.departureTime >= :now', { now }) // Chỉ lấy chuyến từ thời điểm hiện tại
+      .andWhere('schedule.status = :status', { status: ScheduleStatus.AVAILABLE })
+      .orderBy('schedule.departureTime', 'ASC');
+
+    return await queryBuilder.getMany();
   }
 }
 

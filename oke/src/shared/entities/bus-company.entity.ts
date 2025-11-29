@@ -21,6 +21,9 @@ export class BusCompany {
   @Column({ nullable: true, length: 255 })
   image?: string;
 
+  @Column({ nullable: true, length: 500 })
+  address?: string;
+
   @Column({ type: 'longtext', nullable: true })
   descriptions?: string;
 
