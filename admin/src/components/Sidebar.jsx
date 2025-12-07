@@ -65,6 +65,7 @@ export default function Sidebar(){
             <MenuItem to="/admin/bus-station">Quản lý Xe ở bến</MenuItem>
             <MenuItem to="/admin/routes">Quản lý Tuyến đường</MenuItem>
             <MenuItem to="/admin/schedules">Quản lý Lịch trình</MenuItem>
+            <MenuItem to="/admin/tickets">Quản lý Vé đã đặt</MenuItem>
             <MenuItem to="/admin/seats">Quản lý Ghế ngồi</MenuItem>
             <MenuItem to="/admin/seat-status-monitor">Trạng thái ghế (Real-time)</MenuItem>
             <MenuItem to="/admin/seat-type-prices">Giá vé theo loại</MenuItem>

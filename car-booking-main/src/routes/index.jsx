@@ -16,6 +16,7 @@ import VnpayReturn from "../features/book-ticket/pages/VnpayReturn";
 import Login from "../features/auth/pages/Login/Login";
 import Register from "../features/auth/pages/Register/Register";
 import ProfilePage from "../features/profile/pages/ProfilePage";
+import BookingHistory from "../features/booking-history/pages/BookingHistory";
 
 function AppRouter() {
   return (
@@ -26,6 +27,7 @@ function AppRouter() {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/profile" element={<ProfilePage />} />
+      <Route path="/booking-history" element={<BookingHistory />} />
       <Route path="*" element={<NotFoundPage />} />
       <Route path="/bus-station" element={<BusStations />} />
       <Route path="/bus-station/:id" element={<BusStationDetail />} />

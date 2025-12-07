@@ -66,7 +66,11 @@ export class StationRepository {
     try {
       // delete relations and schedules referencing this station
       await queryRunner.query('DELETE FROM bus_station WHERE station_id = ?', [id]);
-      await queryRunner.query('DELETE FROM schedules WHERE departure_station_id = ? OR arrival_station_id = ?', [id, id]);
+      // Delete schedules that belong to routes with this station as departure or arrival
+      await queryRunner.query(
+        'DELETE s FROM schedules s INNER JOIN routes r ON s.route_id = r.id WHERE r.departure_station_id = ? OR r.arrival_station_id = ?',
+        [id, id],
+      );
       await queryRunner.query('DELETE FROM routes WHERE departure_station_id = ? OR arrival_station_id = ?', [id, id]);
 
       await queryRunner.commitTransaction();

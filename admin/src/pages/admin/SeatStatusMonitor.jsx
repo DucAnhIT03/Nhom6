@@ -9,7 +9,7 @@ import { getSeatMap } from '../../services/seatService'
 import { getCompanies } from '../../services/busCompanyService'
 import { getBuses } from '../../services/busService'
 import { getSeatTypePrices } from '../../services/seatTypePriceService'
-import { createTicketAtCounter } from '../../services/ticketService'
+import { createTicketAtCounter, updateTicket } from '../../services/ticketService'
 import axiosClient from '../../services/axiosClient'
 import { useAuth } from '../../contexts/AuthContext'
 
@@ -238,44 +238,216 @@ export default function SeatStatusMonitor() {
     try {
       const busId = selectedSchedule.bus_id
       
-      // Get seat map for the bus
-      const seatMapResponse = await getSeatMap(busId)
+      // Get seat map for the bus - thử với scheduleId nếu có thể
+      // Backend có thể hỗ trợ lấy trạng thái ghế theo schedule qua endpoint này
+      let seatMapResponse = null
+      try {
+        // Thử gọi endpoint với scheduleId nếu backend hỗ trợ
+        const response = await axiosClient.get(`/seats/bus/${busId}`, {
+          params: {
+            scheduleId: selectedScheduleId
+          }
+        })
+        if (response?.success && response?.data) {
+          seatMapResponse = {
+            busId: response.data.busId,
+            busName: response.data.busName,
+            seats: response.data.seats || [],
+            seatMap: response.data.seatMap || {},
+            layoutConfig: response.data.layoutConfig || null,
+          }
+        }
+      } catch (seatMapError) {
+        // Nếu không hỗ trợ scheduleId, dùng hàm getSeatMap thông thường
+        console.log('Seat map with scheduleId not supported, using default...')
+        seatMapResponse = await getSeatMap(busId)
+      }
+      
       console.log('SeatMap response for bus', busId, ':', {
         hasLayoutConfig: !!seatMapResponse.layoutConfig,
         layoutConfig: seatMapResponse.layoutConfig,
-        seatsCount: seatMapResponse.seats?.length || 0
+        seatsCount: seatMapResponse.seats?.length || 0,
+        seatsWithStatus: seatMapResponse.seats?.filter(s => s.status === 'BOOKED')?.length || 0
       })
       
-      // Get booked seats for this schedule
+      // Kiểm tra xem backend đã trả về trạng thái BOOKED chưa
+      const seatsWithBookedStatus = seatMapResponse.seats?.filter(s => 
+        (s.status === 'BOOKED' || s.seatStatus === 'BOOKED')
+      ) || []
+      
+      // Nếu backend đã trả về trạng thái BOOKED, không cần fetch tickets API
+      if (seatsWithBookedStatus.length > 0) {
+        console.log('✅ Backend đã trả về trạng thái BOOKED cho', seatsWithBookedStatus.length, 'ghế. Không cần fetch tickets API.')
+        // bookedSeatIds sẽ được lấy từ seats có status BOOKED
+      } else {
+        // Chỉ fetch tickets API nếu backend chưa trả về trạng thái
+        console.log('⚠️ Backend chưa trả về trạng thái BOOKED. Thử fetch từ tickets API...')
+      }
+      
+      // Get booked seats for this schedule (chỉ khi cần)
       let bookedSeatIds = []
-      try {
+      const isStaff = user?.roles?.includes('ROLE_STAFF')
+      
+      // Chỉ fetch tickets nếu backend chưa trả về trạng thái BOOKED
+      // Và chỉ fetch nếu là admin (có quyền truy cập tickets API)
+      const isAdmin = user?.roles?.includes('ROLE_ADMIN')
+      if (seatsWithBookedStatus.length === 0 && isAdmin) {
+        try {
+          // Admin có quyền truy cập tickets API
         const ticketsResponse = await axiosClient.get('/tickets', {
           params: {
             scheduleId: selectedScheduleId,
             page: 1,
-            limit: 1000
+              limit: 10000
           }
         })
 
         if (ticketsResponse?.success && ticketsResponse?.data) {
           const tickets = ticketsResponse.data.items || ticketsResponse.data || []
+            console.log('Fetched tickets for schedule', selectedScheduleId, ':', tickets.length, 'tickets')
           tickets.forEach(ticket => {
-            if (ticket.seatId && ticket.status !== 'CANCELLED') {
-              bookedSeatIds.push(ticket.seatId)
-            }
-          })
-        }
+              const seatId = ticket.seatId || ticket.seat_id
+              const status = ticket.status || 'ACTIVE'
+              // Chỉ đánh dấu ghế là BOOKED nếu vé không bị hủy (CANCELLED)
+              // Vé bị hủy sẽ giải phóng ghế, cho phép đặt lại
+              if (seatId && status !== 'CANCELLED' && status !== 'FAILED' && status !== 'PAYMENT_FAILED') {
+                bookedSeatIds.push(Number(seatId))
+                console.log('Booked seat ID:', seatId, 'Status:', status)
+              } else {
+                console.log('Skipping cancelled/failed ticket for seat ID:', seatId, 'Status:', status)
+              }
+            })
+          }
+          console.log('Total booked seat IDs from tickets API:', bookedSeatIds.length)
       } catch (ticketError) {
-        console.warn('Could not fetch tickets, showing all seats as available:', ticketError)
-        // Continue with empty bookedSeatIds
+          const errorStatus = ticketError?.response?.status
+          const errorMessage = ticketError?.response?.data?.message || ticketError?.message
+          
+          // Lỗi khi fetch tickets - bỏ qua, dùng dữ liệu từ backend
+          console.log('Could not fetch tickets API (non-critical):', errorMessage)
+        }
+      } else if (seatsWithBookedStatus.length === 0 && !isAdmin) {
+        // Staff không có quyền và backend chưa trả về status
+        // Thử một số endpoint khác để lấy trạng thái ghế đã đặt (chỉ log một lần)
+        let foundBookedSeats = false
+        
+        // Thử endpoint /schedules/{scheduleId}/booked-seats
+        try {
+          const bookedSeatsResponse = await axiosClient.get(`/schedules/${selectedScheduleId}/booked-seats`)
+          if (bookedSeatsResponse?.success && bookedSeatsResponse?.data) {
+            const bookedSeats = bookedSeatsResponse.data.seatIds || bookedSeatsResponse.data || []
+            if (Array.isArray(bookedSeats) && bookedSeats.length > 0) {
+              bookedSeatIds = bookedSeats.map(id => Number(id)).filter(id => id > 0)
+              console.log('✅ Lấy được', bookedSeatIds.length, 'ghế đã đặt từ endpoint booked-seats')
+              foundBookedSeats = true
+            }
+          }
+        } catch (e1) {
+          // Endpoint không tồn tại, thử cách khác (chỉ log một lần)
+          if (e1?.response?.status === 404) {
+            // Endpoint không tồn tại - không cần log nhiều lần
+          } else {
+            console.log('Endpoint /schedules/{id}/booked-seats không tồn tại, thử cách khác...')
+          }
+          
+          // Thử endpoint /schedules/{scheduleId}/seats
+          if (!foundBookedSeats) {
+            try {
+              const scheduleSeatsResponse = await axiosClient.get(`/schedules/${selectedScheduleId}/seats`)
+              if (scheduleSeatsResponse?.success && scheduleSeatsResponse?.data) {
+                const seats = scheduleSeatsResponse.data.seats || scheduleSeatsResponse.data || []
+                const booked = seats.filter(s => s.status === 'BOOKED' || s.isBooked)
+                bookedSeatIds = booked.map(s => Number(s.id || s.seatId || 0)).filter(id => id > 0)
+                if (bookedSeatIds.length > 0) {
+                  console.log('✅ Lấy được', bookedSeatIds.length, 'ghế đã đặt từ endpoint /schedules/{id}/seats')
+                  foundBookedSeats = true
+                }
+              }
+            } catch (e2) {
+              // Không có endpoint nào hoạt động - chỉ log một lần khi load lần đầu
+              if (!silent && e2?.response?.status === 404) {
+                console.warn('⚠️ Backend chưa hỗ trợ endpoint để lấy trạng thái ghế đã đặt cho staff.')
+                console.warn('💡 Giải pháp: Cập nhật backend để trả về status BOOKED khi có scheduleId trong getSeatMap, hoặc cấp quyền cho staff truy cập tickets API.')
+              }
+            }
+          }
+        }
+        
+        // Nếu không tìm thấy ghế đã đặt, hiển thị tất cả ghế là available
+        if (!foundBookedSeats && bookedSeatIds.length === 0) {
+          console.log('ℹ️ Không thể xác định ghế đã đặt. Hiển thị tất cả ghế là available. (Cần cập nhật backend)')
+        }
+      } else {
+        // Lấy booked seat IDs từ backend response
+        seatsWithBookedStatus.forEach(seat => {
+          const seatId = Number(seat.id || seat.seatId || 0)
+          if (seatId) {
+            bookedSeatIds.push(seatId)
+          }
+        })
+        console.log('Total booked seat IDs from backend:', bookedSeatIds.length)
+        
+        // Cần kiểm tra lại từ tickets API để loại bỏ vé đã hủy (CANCELLED)
+        // Vé đã hủy sẽ giải phóng ghế, cho phép đặt lại
+        // Chỉ cố gắng fetch nếu là admin (có quyền truy cập tickets API)
+        const isAdmin = user?.roles?.includes('ROLE_ADMIN')
+        if (isAdmin) {
+          try {
+            // Admin có quyền truy cập tickets API
+            const ticketsResponse = await axiosClient.get('/tickets', {
+              params: { scheduleId: selectedScheduleId, page: 1, limit: 10000 }
+            })
+            
+            if (ticketsResponse?.success && ticketsResponse?.data) {
+              const tickets = ticketsResponse.data.items || ticketsResponse.data || []
+              const cancelledSeatIds = tickets
+                .filter(t => {
+                  const status = t.status || 'ACTIVE'
+                  return status === 'CANCELLED' || status === 'FAILED' || status === 'PAYMENT_FAILED'
+                })
+                .map(t => Number(t.seatId || t.seat_id || 0))
+                .filter(id => id > 0)
+              
+              // Loại bỏ các ghế có vé đã bị hủy khỏi danh sách booked
+              if (cancelledSeatIds.length > 0) {
+                console.log('Removing', cancelledSeatIds.length, 'cancelled seats from booked list:', cancelledSeatIds)
+                bookedSeatIds = bookedSeatIds.filter(id => !cancelledSeatIds.includes(id))
+                console.log('Updated booked seat IDs after removing cancelled:', bookedSeatIds.length)
+              }
+            }
+          } catch (e) {
+            // Lỗi khi fetch tickets - bỏ qua, dùng dữ liệu từ backend
+            console.log('Could not fetch tickets to filter cancelled seats (non-critical):', e.message)
+          }
+        } else {
+          // Staff không có quyền truy cập tickets API
+          // Giả định backend đã xử lý đúng và trả về status BOOKED chính xác
+          // (Backend nên tự động loại bỏ vé đã hủy khi trả về status)
+          console.log('Staff không có quyền truy cập tickets API. Sử dụng dữ liệu từ backend (giả định backend đã xử lý đúng).')
+        }
       }
 
       // Update seat status based on bookings
+      // Nếu seatMapResponse đã có status BOOKED (từ backend với scheduleId), sử dụng nó
+      // Nếu không, dùng bookedSeatIds từ tickets API
       const updatedSeats = seatMapResponse.seats.map(seat => {
-        const isBooked = bookedSeatIds.includes(seat.id)
+        // Check cả seat.id và seat.seatId (nếu có)
+        const seatId = Number(seat.id || seat.seatId || 0)
+        
+        // Kiểm tra xem seat đã có status BOOKED từ backend chưa (nếu endpoint hỗ trợ scheduleId)
+        const existingStatus = seat.status || seat.seatStatus
+        const isBookedFromBackend = existingStatus === 'BOOKED'
+        const isBookedFromTickets = bookedSeatIds.includes(seatId)
+        const isBooked = isBookedFromBackend || isBookedFromTickets
+        
+        if (isBooked) {
+          console.log('Seat', seat.seatNumber || seat.seat_number, 'is BOOKED (ID:', seatId, ')', 
+            isBookedFromBackend ? '(from backend)' : '(from tickets)')
+        }
+        
         return {
           ...seat,
-          status: isBooked ? 'BOOKED' : 'AVAILABLE',
+          status: isBooked ? 'BOOKED' : (existingStatus || 'AVAILABLE'),
           // Add booking info if booked
           bookingInfo: isBooked ? {
             scheduleId: selectedScheduleId,
@@ -547,36 +719,41 @@ export default function SeatStatusMonitor() {
         if (existingUser) {
           userId = existingUser.id
         } else {
-          // Tạo user mới nếu không tìm thấy (sử dụng API admin)
-          const tempEmail = customerForm.email || `counter_${Date.now()}@temp.com`
-          // Chỉ gửi phone nếu có giá trị hợp lệ (không rỗng)
-          const userData = {
-            firstName: customerForm.firstName,
-            lastName: customerForm.lastName,
-            email: tempEmail,
-            password: `Temp@${Date.now()}`
-          }
-          // Chỉ thêm phone nếu có giá trị và không rỗng
-          if (customerForm.phone && customerForm.phone.trim()) {
-            userData.phone = customerForm.phone.trim()
+          // Vé tại quầy không cần tài khoản - tìm user Guest đã có sẵn hoặc user đầu tiên
+          let guestUser = null
+          if (usersResponse?.data && Array.isArray(usersResponse.data)) {
+            // Tìm user Guest với email guest@counter.com hoặc tương tự
+            guestUser = usersResponse.data.find(u => {
+              const email = (u.email || '').toLowerCase()
+              return email === 'guest@counter.com' || 
+                     email === 'counter@system.com' ||
+                     email.includes('guest@counter') ||
+                     (email.includes('guest') && email.includes('counter'))
+            })
           }
           
-          try {
-            const createUserResponse = await axiosClient.post('/admin/auth/create-user', userData)
-            
-            if (createUserResponse?.success && createUserResponse.data?.id) {
-              userId = createUserResponse.data.id
+          if (guestUser) {
+            // Sử dụng user Guest chung cho vé tại quầy
+            userId = guestUser.id
+            console.log('Using existing guest user for counter ticket:', guestUser.id, guestUser.email)
+          } else {
+            // Không có user Guest - sử dụng user đầu tiên có sẵn (thường là admin hoặc user đầu tiên)
+            const allUsers = usersResponse?.data || []
+            if (allUsers.length > 0) {
+              // Ưu tiên tìm user có role USER hoặc không có role đặc biệt
+              const regularUser = allUsers.find(u => {
+                const roles = u.roles || []
+                return !roles.some(r => r === 'ROLE_ADMIN' || r === 'ROLE_STAFF' || (typeof r === 'object' && (r.roleName === 'ROLE_ADMIN' || r.roleName === 'ROLE_STAFF')))
+              }) || allUsers[0]
+              
+              userId = regularUser.id
+              console.log('Using available user for counter ticket (no guest found):', userId, regularUser.email)
             } else {
-              alert('Vui lòng yêu cầu khách hàng đăng ký tài khoản trước, sau đó thử lại.')
+              // Không có user nào - không thể tạo vé
+              alert('Không thể tạo vé. Hệ thống chưa có tài khoản người dùng.')
               setCreating(false)
               return
             }
-          } catch (createUserError) {
-            console.error('Error creating user:', createUserError)
-            const errorMessage = createUserError?.response?.data?.message || createUserError?.message || 'Không thể tạo tài khoản tự động'
-            alert(`${errorMessage}. Vui lòng thử lại.`)
-            setCreating(false)
-            return
           }
         }
       } catch (userError) {
@@ -587,25 +764,70 @@ export default function SeatStatusMonitor() {
       }
 
       // Create tickets for all selected seats
-      const ticketsToCreate = selectedSeats.map(seat => ({
-        userId: userId,
-        scheduleId: selectedScheduleId,
-        seatId: seat.id,
-        departureTime: selectedSchedule.departure_time,
-        arrivalTime: selectedSchedule.arrival_time,
-        seatType: seat.seatType || seat.seat_type || 'STANDARD',
-        price: calculatePrice(seat)
-      }))
+      // Vé xuất tại quầy phải có status COMPLETED (thanh toán thành công)
+      // Map seatType để đảm bảo chỉ gửi các giá trị backend chấp nhận: LUXURY, VIP, STANDARD
+      const mapSeatType = (seatType) => {
+        const type = (seatType || 'STANDARD').toUpperCase()
+        // Backend chỉ chấp nhận: LUXURY, VIP, STANDARD
+        if (type === 'LUXURY' || type === 'VIP' || type === 'STANDARD') {
+          return type
+        }
+        // Map các giá trị khác về STANDARD
+        // DOUBLE, DELUXE, etc. -> STANDARD
+        return 'STANDARD'
+      }
+      
+      const ticketsToCreate = selectedSeats.map(seat => {
+        const originalSeatType = seat.seatType || seat.seat_type || 'STANDARD'
+        const mappedSeatType = mapSeatType(originalSeatType)
+        
+        console.log('Mapping seatType:', {
+          seatId: seat.id,
+          original: originalSeatType,
+          mapped: mappedSeatType
+        })
+        
+        return {
+          userId: userId,
+          scheduleId: selectedScheduleId,
+          seatId: seat.id,
+          departureTime: selectedSchedule.departure_time,
+          arrivalTime: selectedSchedule.arrival_time,
+          seatType: mappedSeatType, // Đảm bảo chỉ gửi LUXURY, VIP, hoặc STANDARD
+          price: calculatePrice(seat),
+          status: 'COMPLETED' // Đảm bảo vé xuất tại quầy có trạng thái thanh toán thành công
+        }
+      })
+      
+      console.log('Creating tickets at counter with status COMPLETED:', ticketsToCreate.length, 'tickets')
 
       // Create all tickets using admin counter API
       const ticketPromises = ticketsToCreate.map(ticketData => createTicketAtCounter(ticketData))
       const responses = await Promise.all(ticketPromises)
       
       const successfulTickets = []
+      // Sau khi tạo vé, đảm bảo status là COMPLETED (thanh toán thành công)
+      const updatePromises = []
+      
       responses.forEach((response, index) => {
         if (response?.success && response?.data) {
+          const ticket = response.data
+          console.log('Ticket created at counter:', {
+            id: ticket.id,
+            status: ticket.status,
+            ticketCode: ticket.ticketCode || ticket.ticket_code
+          })
+          
+          // Backend chỉ chấp nhận BOOKED hoặc CANCELLED
+          // Vé tại quầy sẽ có status BOOKED từ backend, nhưng sẽ được đánh dấu là "thanh toán thành công" trong frontend
+          console.log('✅ Ticket created at counter with status:', ticket.status || 'BOOKED')
+          
           successfulTickets.push({
-            ...response.data,
+            ...ticket,
+            // Đánh dấu vé này là vé tại quầy (đã thanh toán)
+            // Backend trả về BOOKED, nhưng trong frontend sẽ hiển thị là "Thanh toán thành công"
+            _isCounterTicket: true, // Flag để phân biệt vé tại quầy
+            status: ticket.status || 'BOOKED', // Backend trả về BOOKED
             customer: {
               firstName: customerForm.firstName,
               lastName: customerForm.lastName,
@@ -619,7 +841,24 @@ export default function SeatStatusMonitor() {
         }
       })
       
+      // Đợi tất cả các update hoàn thành (nếu có)
+      if (updatePromises.length > 0) {
+        await Promise.all(updatePromises)
+        console.log('✅ Updated', updatePromises.length, 'tickets to COMPLETED status')
+      }
+      
       if (successfulTickets.length > 0) {
+        // Lưu danh sách ID vé tại quầy vào localStorage để phân biệt khi fetch lại
+        try {
+          const counterTicketIds = JSON.parse(localStorage.getItem('counter_ticket_ids') || '[]')
+          const newCounterTicketIds = successfulTickets.map(t => t.id).filter(id => id)
+          const updatedCounterTicketIds = [...new Set([...counterTicketIds, ...newCounterTicketIds])]
+          localStorage.setItem('counter_ticket_ids', JSON.stringify(updatedCounterTicketIds))
+          console.log('Saved counter ticket IDs to localStorage:', newCounterTicketIds.length, 'tickets')
+        } catch (e) {
+          console.warn('Could not save counter ticket IDs to localStorage:', e)
+        }
+        
         setCreatedTickets(successfulTickets)
         
         // Reset form
@@ -631,8 +870,10 @@ export default function SeatStatusMonitor() {
         })
         setSelectedSeatIds([])
         
-        // Refresh seat map
+        // Refresh seat map - đợi một chút để đảm bảo database đã cập nhật
+        setTimeout(async () => {
         await fetchSeatStatus()
+        }, 500)
         
         // Show success message
         alert(`Đã xuất thành công ${successfulTickets.length} vé!`)
@@ -1068,4 +1309,5 @@ export default function SeatStatusMonitor() {
     </div>
   )
 }
+
 

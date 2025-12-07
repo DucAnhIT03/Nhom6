@@ -12,3 +12,14 @@ AFTER status;
 -- FOREIGN KEY (bus_company_id) REFERENCES bus_companies(id)
 -- ON DELETE SET NULL;
 
+
+
+
+
+
+
+
+
+
+
+

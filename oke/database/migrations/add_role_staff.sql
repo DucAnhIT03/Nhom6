@@ -12,3 +12,14 @@ INSERT IGNORE INTO roles (role_name) VALUES ('ROLE_STAFF');
 -- Kiểm tra kết quả
 SELECT * FROM roles;
 
+
+
+
+
+
+
+
+
+
+
+

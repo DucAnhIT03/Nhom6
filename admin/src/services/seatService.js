@@ -48,11 +48,13 @@ export async function getSeats(params = {}) {
 /**
  * Lấy sơ đồ ghế theo busId
  * @param {number} busId - ID của xe
+ * @param {number} scheduleId - ID của lịch trình (optional, để lấy trạng thái ghế đã đặt)
  * @returns {Promise<Object>} Sơ đồ ghế với màu sắc
  */
-export async function getSeatMap(busId) {
+export async function getSeatMap(busId, scheduleId = null) {
   try {
-    const response = await axiosClient.get(`/seats/bus/${busId}`);
+    const params = scheduleId ? { scheduleId } : {};
+    const response = await axiosClient.get(`/seats/bus/${busId}`, { params });
 
     if (response?.success && response?.data) {
       return {

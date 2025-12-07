@@ -120,6 +120,15 @@ const NavigationBar = () => {
                     <button 
                       className="dropdown-item"
                       onClick={() => {
+                        navigate('/booking-history');
+                        setIsUserDropdownOpen(false);
+                      }}
+                    >
+                      Lịch sử đặt vé
+                    </button>
+                    <button 
+                      className="dropdown-item"
+                      onClick={() => {
                         navigate('/profile');
                         setIsUserDropdownOpen(false);
                       }}
@@ -191,6 +200,15 @@ const NavigationBar = () => {
               <div className="side-user-info">
                 Xin chào, {user?.firstName} {user?.lastName}
               </div>
+              <button 
+                className="side-auth-btn profile-btn" 
+                onClick={() => {
+                  navigate('/booking-history');
+                  toggleMenu();
+                }}
+              >
+                Lịch sử đặt vé
+              </button>
               <button 
                 className="side-auth-btn profile-btn" 
                 onClick={() => {

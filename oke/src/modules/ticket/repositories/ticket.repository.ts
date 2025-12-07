@@ -72,11 +72,19 @@ export class TicketRepository {
   }
 
   async findByUserId(userId: number): Promise<Ticket[]> {
-    return this.ticketRepository.find({
-      where: { userId },
-      relations: ['user', 'schedule', 'seat'],
-      order: { createdAt: 'DESC' },
-    });
+    return this.ticketRepository
+      .createQueryBuilder('ticket')
+      .leftJoinAndSelect('ticket.user', 'user')
+      .leftJoinAndSelect('ticket.schedule', 'schedule')
+      .leftJoinAndSelect('schedule.route', 'route')
+      .leftJoinAndSelect('route.departureStation', 'departureStation')
+      .leftJoinAndSelect('route.arrivalStation', 'arrivalStation')
+      .leftJoinAndSelect('schedule.bus', 'bus')
+      .leftJoinAndSelect('bus.company', 'company')
+      .leftJoinAndSelect('ticket.seat', 'seat')
+      .where('ticket.userId = :userId', { userId })
+      .orderBy('ticket.createdAt', 'DESC')
+      .getMany();
   }
 
   async findByTicketCodeAndPhone(ticketCode: string, phone: string): Promise<Ticket | null> {

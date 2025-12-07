@@ -57,3 +57,14 @@ CREATE INDEX idx_schedules_bus_departure ON schedules(bus_id, departure_time);
 -- - Có nhiều seats trong một xe
 -- - Real-time monitoring cần query thường xuyên (mỗi 3 giây)
 
+
+
+
+
+
+
+
+
+
+
+

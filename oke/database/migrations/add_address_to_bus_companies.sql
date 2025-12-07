@@ -43,3 +43,14 @@ WHERE TABLE_SCHEMA = 'bus_booking_system'
   AND TABLE_NAME = 'bus_companies'
   AND COLUMN_NAME = 'address';
 
+
+
+
+
+
+
+
+
+
+
+

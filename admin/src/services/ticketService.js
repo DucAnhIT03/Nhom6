@@ -89,16 +89,35 @@ export async function createTicket(ticketData) {
  */
 export async function createTicketAtCounter(ticketData) {
   try {
+    // Map seatType để đảm bảo chỉ gửi các giá trị backend chấp nhận: LUXURY, VIP, STANDARD
+    const mapSeatType = (seatType) => {
+      const type = (seatType || 'STANDARD').toUpperCase()
+      // Backend chỉ chấp nhận: LUXURY, VIP, STANDARD
+      if (type === 'LUXURY' || type === 'VIP' || type === 'STANDARD') {
+        return type
+      }
+      // Map các giá trị khác về STANDARD
+      return 'STANDARD'
+    }
+    
     const payload = {
       userId: Number(ticketData.userId),
       scheduleId: Number(ticketData.scheduleId),
       seatId: Number(ticketData.seatId),
       departureTime: ticketData.departureTime,
       arrivalTime: ticketData.arrivalTime,
-      seatType: ticketData.seatType,
+      seatType: mapSeatType(ticketData.seatType), // Đảm bảo chỉ gửi LUXURY, VIP, hoặc STANDARD
       price: Number(ticketData.price),
+      // Không gửi status - backend sẽ tự động set status cho vé tại quầy
       ...(ticketData.ticketCode && { ticketCode: ticketData.ticketCode }),
     };
+    
+    console.log('Creating ticket at counter with payload:', {
+      ...payload,
+      originalSeatType: ticketData.seatType,
+      mappedSeatType: payload.seatType,
+      note: 'Vé tại quầy - backend sẽ tự động set status, frontend sẽ hiển thị là "Thanh toán thành công"'
+    });
     
     // Validate
     if (!payload.userId || !payload.scheduleId || !payload.seatId) {
@@ -168,6 +187,23 @@ export async function lookupTicket(ticketCode, phone) {
     return null;
   } catch (error) {
     console.error('Error looking up ticket:', error);
+    throw error;
+  }
+}
+
+/**
+ * Hủy vé (đánh dấu thanh toán thất bại)
+ * @param {number} id - ID của vé
+ * @returns {Promise<Object>} Response từ server
+ */
+export async function cancelTicket(id) {
+  try {
+    // Backend chỉ chấp nhận BOOKED hoặc CANCELLED
+    // Đánh dấu vé là thanh toán thất bại (sẽ hiển thị là "Thanh toán thất bại" trong frontend)
+    const response = await axiosClient.put(`/tickets/${id}`, { status: 'CANCELLED' });
+    return response;
+  } catch (error) {
+    console.error('Error cancelling ticket:', error);
     throw error;
   }
 }

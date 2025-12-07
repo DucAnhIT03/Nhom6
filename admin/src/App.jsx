@@ -18,6 +18,7 @@ import SeatStatusMonitor from './pages/admin/SeatStatusMonitor'
 import Schedules from './pages/admin/Schedules'
 import SeatTypePrices from './pages/admin/SeatTypePrices'
 import Banners from './pages/admin/Banners'
+import Tickets from './pages/admin/Tickets'
 
 function AdminLayout() {
   const { user } = useAuth();
@@ -51,6 +52,7 @@ function AdminLayout() {
                 <Route path="/admin/seat-status-monitor" element={<SeatStatusMonitor/>} />
                 <Route path="/admin/seat-type-prices" element={<SeatTypePrices/>} />
                 <Route path="/admin/schedules" element={<Schedules/>} />
+                <Route path="/admin/tickets" element={<Tickets/>} />
                 <Route path="/admin/posts" element={<Posts/>} />
                 <Route path="/admin/banners" element={<Banners/>} />
               </>
